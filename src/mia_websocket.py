@@ -9,14 +9,12 @@ URL_LA_PAZ = "ws://192.168.1.129:3000/cable"
 URL_SIMULADOR = "wss://shielded-taiga-04156.herokuapp.com/cable"
 
 class WebSocketMia:
-    def __init__(self, gui, contador):
+    def __init__(self, gui):
         self.url = URL_LA_PAZ
         self.gui = gui
-        self.contador = contador
         self.ws = None
         self.is_running = False
        
-        
     async def conecta_async(self):
         # Conexión al WebSocket de Rails
         try:
@@ -44,21 +42,6 @@ class WebSocketMia:
             print(f"❌ Error al desconectar del WebSocket de Rails: {e}")
             self.gui.despliega_mensaje_tx(f"Error al desconectar del SysQB WebSocket de: {e}\n")
             return None
-
-    async def suscribe(self, sysqb_socket, mesa_id): 
-        mensaje_suscribir = {
-            "command": "subscribe",
-            "identifier": json.dumps({"channel": "MiaChannel", "mia_id": mesa_id})
-        }
-        try:
-            await sysqb_socket.send(json.dumps(mensaje_suscribir))
-            print(f"🔗  Suscrito al canal MiaChannel: {mesa_id}")
-            self.gui.despliega_mensaje_tx(f"🔗  Suscrito al canal MiaChannel: {mesa_id}\n")
-            return True  # Indica éxito 
-        except Exception as e:
-            print(f"❌ Error al enviar el mensaje de suscripción: {e}")
-            self.gui.despliega_mensaje_tx(f"❌ Error al enviar el mensaje de su suscripción: {e}\n")
-            return False
 
     async def envia_mensaje(self, sysqb_socket, mia_id, datos):
         mensaje = {
@@ -96,3 +79,18 @@ class WebSocketMia:
                 print("❌ Conexión cerrada:", e)
                 self.gui.despliega_mensaje_tx("❌ Conexión cerrada, intenta reconectar...\n")
                 break
+
+    async def suscribe(self, sysqb_socket, mesa_id): 
+        mensaje_suscribir = {
+            "command": "subscribe",
+            "identifier": json.dumps({"channel": "MiaChannel", "mia_id": mesa_id})
+        }
+        try:
+            await sysqb_socket.send(json.dumps(mensaje_suscribir))
+            print(f"🔗  Suscrito al canal MiaChannel: {mesa_id}")
+            self.gui.despliega_mensaje_tx(f"🔗  Suscrito al canal MiaChannel: {mesa_id}\n")
+            return True  # Indica éxito 
+        except Exception as e:
+            print(f"❌ Error al enviar el mensaje de suscripción: {e}")
+            self.gui.despliega_mensaje_tx(f"❌ Error al enviar el mensaje de su suscripción: {e}\n")
+            return False

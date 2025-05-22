@@ -4,7 +4,7 @@ from tkinter import PhotoImage
 from PIL import Image, ImageTk  
 from tkinter import scrolledtext
 from mia_websocket import WebSocketMia
-from mia_contadores import ContadorPiezas
+from mia_sorteo import ManejadorSorteo
 import asyncio
 
 
@@ -22,13 +22,13 @@ class MiaGui:
         logo_label = tk.Label(self.root, image=self.logo)
         logo_label.pack(side=tk.LEFT, pady=5, padx=10)  # Coloca el logo
         
-        self.contador = ContadorPiezas(self)
-        self.websocket_mia = WebSocketMia(self, self.contador) 
-        self.create_widgets()
+        self.websocket_mia = WebSocketMia(self) 
+        self.sorteo = ManejadorSorteo(self)
         self.inicia_conteo = False
         self.detiene_conteo = False
         self.sysqb_socket = None
         self.mesa_id = "MIA-01"  # ID de la mesa por omisión
+        self.create_widgets()
         
     def create_widgets(self):
 
@@ -68,13 +68,9 @@ class MiaGui:
         self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
         self.text_area_rx.insert("1.0", " ", "margin")  # Aplicar la configuración de margen
 
-         # Inicializa los contadores de las cajitas de sorteo
-        self.contadores_botones = [0] * 7  # OK, NG-1, NG-2, NG-3, NG-4, NG-5, NG-MIX
-        self.pieza_numero = 1
-
         # Función de respuesta (callback) para el tacto de las cajitas de sorteo
         def make_incrementa_callback(idx):
-            return lambda event: self.incrementa_contador(idx)
+            return lambda event: self.sorteo.incrementa_contador(idx)
         # Función de respuesta (callback) para el tacto de los botones de tipo de incidente asociados a NG-MIX
         def make_circulo_boton_callback(idx):
             return lambda event: self.circulo_boton_callback(idx)
@@ -90,7 +86,7 @@ class MiaGui:
         self.pieza_label.pack(side=tk.LEFT, padx=5)
         self.pieza_entry = tk.Entry(pieza_container, font=("Arial", 24), width=8)
         self.pieza_entry.pack(side=tk.RIGHT, padx=5)
-        self.pieza_entry.insert(0, f"{self.pieza_numero:>10}")
+        self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>10}")
 
         # Checkboxes para multiplicadores X1, X10 y X100
         multiplicador_frame = tk.Frame(variable_frame)
@@ -296,11 +292,12 @@ class MiaGui:
         conteo_buttons_frame.pack(side=tk.BOTTOM, pady=30, anchor=tk.CENTER)
 
         # Botón para iniciar el conteo
-        self.inic_conteo_button = tk.Button(conteo_buttons_frame, text="INIC", command=self.inicia_conteo)
+        self.inic_conteo_button = tk.Button(conteo_buttons_frame, text="INICIA ", command=self.sorteo.inicia_conteo)
         self.inic_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
 
         # Botón para detener el conteo
-        self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="--------", command=self.detiene_conteo)
+        self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="--------", command=self.sorteo.detiene_conteo)
+        #self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="TERMINA", command=self.sorteo.fin_conteo)
         self.detiene_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
 
         # Contenedor para los botones de Desconecta, Conecta y No. de Mesa
@@ -327,6 +324,21 @@ class MiaGui:
         self.connect_button = ttk.Button(button_frame, text="Conecta con SysQB", command=self.conecta_sysqb, style="Green.TButton")
         self.connect_button.grid(row=0, column=2, padx=20, pady=5, sticky="e")
 
+    # Actualiza la cajita de PIEZA No. y la cajita de sorteo accionada
+    def actualiza_cajitas(self, pieza_numero, idx):
+        entrys = [
+            self.pza_ok_entry,
+            self.pza_ng_entry,
+            self.pza_ng_entry_2,
+            self.pza_ng_entry_3,
+            self.pza_ng_entry_4,
+            self.pza_ng_entry_5,
+            self.pza_ng_entry_mix
+        ]
+        self.pieza_entry.insert(0, f"{pieza_numero:>10}")
+        entrys[idx].delete(0, 'end')
+        entrys[idx].insert(0, f"{self.sorteo.contadores_botones[idx]:>10}")
+
     #  Función de respuesta al toque para los botones de tipo de incidente ("callback")
     def circulo_boton_callback(self, idx):
         print(f"Botón circular {idx+1} presionado")
@@ -338,43 +350,6 @@ class MiaGui:
             canvas.itemconfig(circulo_interior, fill="gray")
         else:
             canvas.itemconfig(circulo_interior, fill="yellow")
-
-    # Función de respuesta al toque sobre las cajitas de contadores  NG-x ("callback")
-    def incrementa_contador(self, idx):
-        self.contadores_botones[idx] += 1
-        ok = ng = 0
-        if idx == 0:
-            ok = 1
-        else:
-            ng = 1   
-        # Envía la pieza inspeccionada a SysQB. El llamado requiere una tarea y un bucle de eventos para compatibilidad con Tkinter.
-        loop = asyncio.get_event_loop()
-        self._conteo_task = loop.create_task(self._envia_sorteo(self.pieza_numero, idx, ok, ng))
-        self.pieza_numero += 1
-        self.pieza_entry.insert(0, f"{self.pieza_numero:>10}")
-       
-       # Despliega los contadores en las cajitas correspondientes
-        if idx == 0:
-            self.pza_ok_entry.delete(0, tk.END)
-            self.pza_ok_entry.insert(0, f"{self.contadores_botones[idx]:>10}")
-        elif idx == 1:
-            self.pza_ng_entry.delete(0, tk.END)
-            self.pza_ng_entry.insert(0, f"{self.contadores_botones[idx]:>10}")
-        elif idx == 2:
-            self.pza_ng_entry_2.delete(0, tk.END)
-            self.pza_ng_entry_2.insert(0, f"{self.contadores_botones[idx]:>10}")
-        elif idx == 3:
-            self.pza_ng_entry_3.delete(0, tk.END)
-            self.pza_ng_entry_3.insert(0, f"{self.contadores_botones[idx]:>10}")
-        elif idx == 4:
-            self.pza_ng_entry_4.delete(0, tk.END)
-            self.pza_ng_entry_4.insert(0, f"{self.contadores_botones[idx]:>10}")
-        elif idx == 5:
-            self.pza_ng_entry_5.delete(0, tk.END)
-            self.pza_ng_entry_5.insert(0, f"{self.contadores_botones[idx]:>10}")
-        elif idx == 6:
-            self.pza_ng_entry_mix.delete(0, tk.END)
-            self.pza_ng_entry_mix.insert(0, f"{self.contadores_botones[idx]:>10}")
 
     def despliega_mensaje_tx(self, mensaje):
         self.text_area_tx.insert("1.0", mensaje + "\n", "margin")
@@ -401,59 +376,26 @@ class MiaGui:
     def despliega_detener(self):    
         self.detiene_conteo_button.config(text="\u00A0-DETENER-\u00A0")
     
-    def inic_cajitas(self):  
-         self.pieza_entry.insert(0, f"{self.pieza_numero:>10}")
+    def limpia_cajitas(self):  
+        entrys = [
+            self.pza_ok_entry,
+            self.pza_ng_entry,
+            self.pza_ng_entry_2,
+            self.pza_ng_entry_3,
+            self.pza_ng_entry_4,
+            self.pza_ng_entry_5,
+            self.pza_ng_entry_mix
+        ]
+        self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>10}")
+        for idx in range(len(entrys)):
+            entrys[idx].delete(0, 'end')
+            entrys[idx].insert(0, f"{self.sorteo.contadores_botones[idx]:>10}")
          
     def lee_mesa(self):
         try:
             return int(self.mesa_entry.get().strip())  # Convierte a entero y elimina espacios en blanco
         except ValueError:
             return 1  # Valor predeterminado si no es un número válido
-    
-    def inicia_conteo(self):
-        if not self.inicia_conteo:
-            self.inicia_conteo = True
-            self.detiene_conteo = False
-            self.contador.inicia_contadores()
-            self.despliega_detener()
-            self.pieza_numero = 1
-            self.contadores_botones = [0] * 7
-            self.inic_cajitas()
-            
-            # Crea la tarea de conteo periódico en un bucle de eventos para compatibilidad con Tkinter
-            loop = asyncio.get_event_loop()
-            self._conteo_task = loop.create_task(self._conteo_periodico())
-        else:
-            self.contador.inicia_contadores()
-            
-    async def _conteo_periodico(self):
-        while self.inicia_conteo and not self.detiene_conteo:
-            # Enviar datos al servidor SysQB cada 0.5 segundos  
-            ok = self.contador.lee_ok()
-            ng = self.contador.lee_ng()
-            self.mesa_id = "MIA-" + str(self.lee_mesa()).zfill(2)  # Formato "MIA-01"
-            
-            datos = {"mesa": self.mesa_id, "piezas_ok": ok, "piezas_ng": ng}
-            await self.websocket_mia.envia_mensaje(self.sysqb_socket, self.mesa_id, datos)
-            await asyncio.sleep(1)  # Espera 1 segundo entre envíos (ajusta según necesidad)
-    
-    async def _envia_sorteo(self, pieza, idx, ok, ng):
-        incidentes = ["", "raya", "golpe", "marca", "longitud incorrecta", "falta buje", "multiples"]
-        self.mesa_id = "MIA-" + str(self.lee_mesa()).zfill(2)  # Formato "MIA-01"
-        
-        datos = {"mesa": self.mesa_id, "pieza": pieza, "piezas_ok": ok, "piezas_ng": ng, "incidente": incidentes[idx]}
-        await self.websocket_mia.envia_mensaje(self.sysqb_socket, self.mesa_id, datos)
-       
-    def detiene_conteo(self):
-        self.detiene_conteo = not self.detiene_conteo
-        if self.detiene_conteo:
-            self.despliega_continuar()
-        else:
-            self.despliega_detener()
-        if not self.detiene_conteo:
-            self.inicia_conteo = True
-            loop = asyncio.get_event_loop()
-            self._conteo_task = loop.create_task(self._conteo_periodico())
 
     def connect_websocket(self):
         self.websocket_mia.connect()
