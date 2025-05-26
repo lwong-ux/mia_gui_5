@@ -11,7 +11,7 @@ import asyncio
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Simulación            Ver_3.0")
+        self.root.title("Wong Instruments             MIA - Simulación            Ver 3.1")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
@@ -36,21 +36,9 @@ class MiaGui:
         main_frame = tk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Sub-frame para la señal de conexión
-        signal_frame = tk.Frame(main_frame)
-        signal_frame.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(5, 0))
-        
-        # Etiqueta para la señal de conexión
-        tk.Label(signal_frame, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
-        # Lienzo para dibujar la sennal de conexión (superior izquierda)
-        self.signal_canvas = tk.Canvas(signal_frame, width=20, height=20, bg=main_frame.cget("bg"), highlightthickness=0)
-        self.signal_canvas.pack(side=tk.LEFT)
-        self.signal_circle = self.signal_canvas.create_oval(2, 2, 18, 18, fill="gray", outline="")  # Círculo inicial (apagado)
-        self.signal_circle = self.signal_canvas.create_oval(4, 4, 16, 16, fill="gray", outline="")  # Círculo inicial (apagado)
-
         # Sub-frame para las áreas de texto
         text_frame = tk.Frame(main_frame)
-        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, pady=(30, 0))
 
         # Título y área de TX
         tk.Label(text_frame, text="Tx al servidor SysQB", font=("Arial", 14)).pack(pady=(0, 5))
@@ -68,6 +56,18 @@ class MiaGui:
         self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
         self.text_area_rx.insert("1.0", " ", "margin")  # Aplicar la configuración de margen
 
+        # Sub-frame para la señal de conexión
+        signal_frame = tk.Frame(text_frame)
+        signal_frame.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(5, 0))
+        
+        # Etiqueta para la señal de conexión
+        tk.Label(signal_frame, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
+        # Lienzo para dibujar la sennal de conexión (superior izquierda)
+        self.signal_canvas = tk.Canvas(signal_frame, width=20, height=20, bg=main_frame.cget("bg"), highlightthickness=0)
+        self.signal_canvas.pack(side=tk.LEFT)
+        self.signal_circle = self.signal_canvas.create_oval(2, 2, 18, 18, fill="gray", outline="")  # Círculo inicial (apagado)
+        self.signal_circle = self.signal_canvas.create_oval(4, 4, 16, 16, fill="gray", outline="")  # Círculo inicial (apagado)
+
         # Función de respuesta (callback) para el tacto de las cajitas de sorteo
         def make_incrementa_callback(idx):
             return lambda event: self.sorteo.incrementa_contador(idx)
@@ -77,7 +77,7 @@ class MiaGui:
 
         # Sub-frame para el despliegue de las cajitas y botoneras de sorteo (OK, NG-nn)
         variable_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        variable_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=10)
+        variable_frame.pack(side=tk.RIGHT, fill=tk.Y, pady=(15, 0), padx=20)
 
         # Etiqueta, cajita y contador para "PIEZA"
         pieza_container = tk.Frame(variable_frame)
@@ -270,7 +270,7 @@ class MiaGui:
             self.focos_lienzos.append(canvas)
             self.focos_dibujos.append((circulo_ext, circulo_interior))
         
-        # Sub-frame para los lienzos dond dibujar los botones que seleccionan incidentes múltiples
+        # Sub-frame para los lienzos donde dibujar los botones que seleccionan incidentes múltiples
         self.boton_circular_dibujos = []
         self.boton_circular_lienzos = []
         circulos_botones_frame = tk.Frame(variable_frame)
@@ -296,8 +296,8 @@ class MiaGui:
         self.inic_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
 
         # Botón para detener el conteo
-        self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="--------", command=self.sorteo.detiene_conteo)
-        #self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="TERMINA", command=self.sorteo.fin_conteo)
+        #self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="--------", command=self.sorteo.detiene_conteo)
+        self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="TERMINA", command=self.sorteo.fin_conteo)
         self.detiene_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
 
         # Contenedor para los botones de Desconecta, Conecta y No. de Mesa
@@ -337,7 +337,7 @@ class MiaGui:
         ]
         self.pieza_entry.insert(0, f"{pieza_numero:>10}")
         entrys[idx].delete(0, 'end')
-        entrys[idx].insert(0, f"{self.sorteo.contadores_botones[idx]:>10}")
+        entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>10}")
 
     #  Función de respuesta al toque para los botones de tipo de incidente ("callback")
     def circulo_boton_callback(self, idx):
@@ -348,8 +348,10 @@ class MiaGui:
         current_color = canvas.itemcget(circulo_interior, "fill")
         if current_color == "yellow":
             canvas.itemconfig(circulo_interior, fill="gray")
+            self.sorteo.estado_botones_inci[idx] = False
         else:
             canvas.itemconfig(circulo_interior, fill="yellow")
+            self.sorteo.estado_botones_inci[idx] = True
 
     def despliega_mensaje_tx(self, mensaje):
         self.text_area_tx.insert("1.0", mensaje + "\n", "margin")
@@ -389,7 +391,7 @@ class MiaGui:
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>10}")
         for idx in range(len(entrys)):
             entrys[idx].delete(0, 'end')
-            entrys[idx].insert(0, f"{self.sorteo.contadores_botones[idx]:>10}")
+            entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>10}")
          
     def lee_mesa(self):
         try:
@@ -419,7 +421,7 @@ class MiaGui:
         # Detiene el conteo
         self.detiene_conteo = True
         self.inicia_conteo = False
-        self.despliega_continuar()
+        #self.despliega_continuar()
         
         # Cierra WebSocket
         loop = asyncio.get_event_loop()

@@ -10,7 +10,7 @@ URL_SIMULADOR = "wss://shielded-taiga-04156.herokuapp.com/cable"
 
 class WebSocketMia:
     def __init__(self, gui):
-        self.url = URL_LA_PAZ
+        self.url = URL_SIMULADOR
         self.gui = gui
         self.ws = None
         self.is_running = False
@@ -28,7 +28,7 @@ class WebSocketMia:
            
         except Exception as e:
             print(f"❌ Error al conectar al WebSocket de Rails: {e}")
-            self.gui.despliega_mensaje_tx(f"Error al conectar al SysQB WebSocket de: {e}\n")
+            self.gui.despliega_mensaje_tx(f"Error al conectar al SysQB WebSocket: {e}\n")
             return None
     
     async def desconecta_async(self, sysqb_socket):
@@ -40,7 +40,7 @@ class WebSocketMia:
             return True
         except Exception as e:
             print(f"❌ Error al desconectar del WebSocket de Rails: {e}")
-            self.gui.despliega_mensaje_tx(f"Error al desconectar del SysQB WebSocket de: {e}\n")
+            self.gui.despliega_mensaje_tx(f"Error al desconectar del SysQB WebSocket: {e}\n")
             return None
 
     async def envia_mensaje(self, sysqb_socket, mia_id, datos):
