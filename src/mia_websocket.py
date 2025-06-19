@@ -5,12 +5,12 @@ import json
 import time
 
 # URL del servidor Rails SysQB en la Mac / ruta del WebSocket (Action Cable) declarada en config/environments/development.rb
-URL_LA_PAZ = "ws://192.168.1.129:3000/cable" 
-URL_SIMULADOR = "wss://shielded-taiga-04156.herokuapp.com/cable"
+URL_MEZTLI = "ws://192.168.100.25:3000/cable" 
+URL_SIMULADOR = "ws://shielded-taiga-04156.herokuapp.com/cable"
 
 class WebSocketMia:
     def __init__(self, gui):
-        self.url = URL_SIMULADOR
+        self.url = URL_MEZTLI
         self.gui = gui
         self.ws = None
         self.is_running = False

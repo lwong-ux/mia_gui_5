@@ -11,7 +11,7 @@ import asyncio
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Simulación            Ver 3.1")
+        self.root.title("Wong Instruments             MIA - Simulación            Ver 3.2")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
@@ -287,7 +287,7 @@ class MiaGui:
             self.boton_circular_dibujos.append((circulo_ext, circulo_interior))
             self.boton_circular_lienzos.append(canvas_btn)
 
-        # Sub-frame para los botones de INIC y DETENER/CONTINUAR
+        # Sub-frame para los botones de INICIA y TERMINA
         conteo_buttons_frame = tk.Frame(variable_frame)
         conteo_buttons_frame.pack(side=tk.BOTTOM, pady=30, anchor=tk.CENTER)
 
@@ -307,7 +307,15 @@ class MiaGui:
         # Botón Desconecta a la extrema izquierda (columna 0)
         style = ttk.Style()
         style.configure("Red.TButton", foreground="gray", font=("Arial", 14, "bold"))
-        self.disconnect_button = ttk.Button(button_frame, text="Desconecta", command=self.desconecta_sysqb, style="Red.TButton")
+        self.disconnect_button = tk.Button(button_frame, text="Desconecta", command=self.desconecta_sysqb,relief=tk.RAISED,
+        bd=4,
+        height=2,
+        width=10,
+        font=("Arial", 14, "bold"),
+        bg="#e0e0e0",
+        fg="black",
+        activebackground="#cccccc",
+        activeforeground="black")
         self.disconnect_button.grid(row=0, column=0, padx=20, pady=5, sticky="e")
 
         # Etiqueta, cajita y contador para "Mesa No." (columna 1)

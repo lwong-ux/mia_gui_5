@@ -108,7 +108,7 @@ class ManejadorSorteo:
 
     # Función del protocolo MIA-Proper 1.0: Envía el comando 'PIEZA_INSPEC'
     async def _pieza_inspeccionada(self, pieza, idx, ok, ng):
-        incidentes = ["", " raya", " golpe", " marca", " longitud incorrecta", " falta buje", " multiples"]
+        incidentes = ["", "1", "2", "3", "4", "5"]
         inci = []
         mia_id = "MIA-" + str(self.gui.lee_mesa()).zfill(2)
         # Si los incidentes son múltiples, lee los botones activos:
