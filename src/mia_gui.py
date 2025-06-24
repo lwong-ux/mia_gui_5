@@ -11,7 +11,7 @@ import asyncio
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Simulación            Ver 3.2")
+        self.root.title("Wong Instruments             MIA - Simulación            Ver 3.3")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("wi_logo_1.png")  # Reemplaza con la ruta de tu imagen

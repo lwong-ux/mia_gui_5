@@ -10,7 +10,7 @@ URL_SIMULADOR = "ws://shielded-taiga-04156.herokuapp.com/cable"
 
 class WebSocketMia:
     def __init__(self, gui):
-        self.url = URL_MEZTLI
+        self.url = URL_SIMULADOR
         self.gui = gui
         self.ws = None
         self.is_running = False
@@ -74,7 +74,11 @@ class WebSocketMia:
                 elif data.get("message"):
                     print("📡 Mensaje recibido:", data["message"])
                     self.gui.despliega_mensaje_rx(f"📡  {data.get('message')}")
-                # Puedes agregar más tipos de mensajes aquí si lo necesitas
+                    if data.get("message", {}).get("accion") == "INICIA_FOLIO":
+                        self.gui.sorteo.inicia_conteo()
+                else:
+                    print("📡 Mensaje desconocido:", data)
+                    self.gui.despliega_mensaje_rx(f"📡  Mensaje desconocido: {data}\n" )
             except websockets.exceptions.ConnectionClosedError as e:
                 print("❌ Conexión cerrada:", e)
                 self.gui.despliega_mensaje_tx("❌ Conexión cerrada, intenta reconectar...\n")

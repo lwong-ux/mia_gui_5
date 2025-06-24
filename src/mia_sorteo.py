@@ -22,7 +22,7 @@ class ManejadorSorteo:
 
     # Respuesta al botón INIC: limpia contadores
     def inicia_conteo(self):
-        self.inicia_folio()
+        #self.inicia_folio()
         if not self._conteo_iniciado:
             self._conteo_iniciado = True
             self._conteo_detenido = False
