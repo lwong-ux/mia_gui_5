@@ -11,7 +11,7 @@ import asyncio
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Simulación            Ver 3.3")
+        self.root.title("Wong Instruments             MIA - Raspberry Pi            Ver 4.0")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
@@ -38,19 +38,19 @@ class MiaGui:
         
         # Sub-frame para las áreas de texto
         text_frame = tk.Frame(main_frame)
-        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, pady=(30, 0))
+        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, pady=(20, 0))
 
         # Título y área de TX
-        tk.Label(text_frame, text="Tx al servidor SysQB", font=("Arial", 14)).pack(pady=(0, 5))
-        self.text_area_tx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=42, height=15, font=("Arial", 12))
+        tk.Label(text_frame, text="Tx al servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
+        self.text_area_tx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=50, height=5, font=("DejaVu Sans Mono", 11))
         self.text_area_tx.pack(pady=(0, 10), padx=(10, 10))
         # Agrega margen interno al texto
         self.text_area_tx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
         self.text_area_tx.insert("1.0", " ", "margin")  # Aplicar la configuración de margen
 
         # Título y área de RX
-        tk.Label(text_frame, text="Rx del servidor SysQB", font=("Arial", 14)).pack(pady=(0, 5))
-        self.text_area_rx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=42, height=15, font=("Arial", 12))
+        tk.Label(text_frame, text="Rx del servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
+        self.text_area_rx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=50, height=5, font=("DejaVu Sans Mono", 11))
         self.text_area_rx.pack(pady=(0, 10), padx=(10, 10))
         # Agrega margen interno al texto
         self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
@@ -58,7 +58,7 @@ class MiaGui:
 
         # Sub-frame para la señal de conexión
         signal_frame = tk.Frame(text_frame)
-        signal_frame.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(5, 0))
+        signal_frame.pack(side=tk.TOP, anchor=tk.NW, padx=30, pady=(50, 0))
         
         # Etiqueta para la señal de conexión
         tk.Label(signal_frame, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
@@ -67,6 +67,54 @@ class MiaGui:
         self.signal_canvas.pack(side=tk.LEFT)
         self.signal_circle = self.signal_canvas.create_oval(2, 2, 18, 18, fill="gray", outline="")  # Círculo inicial (apagado)
         self.signal_circle = self.signal_canvas.create_oval(4, 4, 16, 16, fill="gray", outline="")  # Círculo inicial (apagado)
+
+        # Etiqueta y campo para URL de conexión (a la derecha del círculo)
+        self.url_label = tk.Label(signal_frame, text="URL:", font=("DejaVu Sans Mono", 12))
+        self.url_label.pack(side=tk.LEFT, padx=(15, 2))
+        self.url_entry = tk.Entry(signal_frame, font=("DejaVu Sans Mono", 12), width=38)
+        self.url_entry.pack(side=tk.LEFT, padx=(0, 10))
+        #self.url_entry.insert(0, "wss://example.com/socket")  # Valor por defecto
+        self.url_entry.insert(0,self.websocket_mia.url)  # Valor por defecto
+       
+        # Contenedor para los botones de Desconecta, Conecta y No. de Mesa (movido aquí desde abajo)
+        button_frame = tk.Frame(text_frame)
+        button_frame.pack(fill=tk.X, pady=30)
+
+        # Botón Desconecta a la extrema izquierda (columna 0)
+        style = ttk.Style()
+        style.configure("Red.TButton", foreground="gray", font=("DejaVu Sans Mono", 14))
+        self.disconnect_button = tk.Button(button_frame, text="DESCONECTA", command=self.desconecta_sysqb, relief=tk.RAISED,
+            bd=4,
+            height=2,
+            width=12,
+            font=("Arial", 14),
+            bg="#e0e0e0",
+            fg="black",
+            activebackground="#cccccc",
+            activeforeground="black")
+        self.disconnect_button.grid(row=0, column=0, padx=20, pady=5, sticky="e")
+
+        # Etiqueta, cajita y contador para "Mesa No." (columna 1)
+        mesa_container = tk.Frame(button_frame)
+        mesa_container.grid(row=0, column=1, padx=20, pady=5)
+        self.mesa_label = tk.Label(mesa_container, text="Mesa No.", font=("Arial", 14))
+        self.mesa_label.pack(side=tk.LEFT, padx=5)
+        self.mesa_entry = tk.Entry(mesa_container, font=("Arial", 14), width=4)
+        self.mesa_entry.pack(side=tk.RIGHT, padx=5)
+        self.mesa_entry.insert(0, " 1")  # Establecer el valor predeterminado a 1
+
+        # Botón Conecta a la extrema derecha (columna 2)
+        style.configure("Green.TButton", foreground="#1094F9", font=("DejaVu Sans Mono", 14))
+        self.connect_button = tk.Button(button_frame, text="CONECTA", command=self.conecta_sysqb, relief=tk.RAISED,
+            bd=4,
+            height=2,
+            width=10,
+            font=("Arial", 14),
+            bg="#e0e0e0",
+            fg="black",
+            activebackground="#cccccc",
+            activeforeground="black")                             
+        self.connect_button.grid(row=0, column=2, padx=20, pady=5, sticky="e")
 
         # Función de respuesta (callback) para el tacto de las cajitas de sorteo
         def make_incrementa_callback(idx):
@@ -77,7 +125,7 @@ class MiaGui:
 
         # Sub-frame para el despliegue de las cajitas y botoneras de sorteo (OK, NG-nn)
         variable_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        variable_frame.pack(side=tk.RIGHT, fill=tk.Y, pady=(15, 0), padx=20)
+        variable_frame.pack(side=tk.RIGHT, fill=tk.Y, pady=(15, 0), padx=10)
 
         # Etiqueta, cajita y contador para "PIEZA"
         pieza_container = tk.Frame(variable_frame)
@@ -300,37 +348,6 @@ class MiaGui:
         self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="TERMINA", command=self.sorteo.fin_conteo)
         self.detiene_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
 
-        # Contenedor para los botones de Desconecta, Conecta y No. de Mesa
-        button_frame = tk.Frame(self.root)
-        button_frame.pack(fill=tk.X, pady=30)
-
-        # Botón Desconecta a la extrema izquierda (columna 0)
-        style = ttk.Style()
-        style.configure("Red.TButton", foreground="gray", font=("Arial", 14, "bold"))
-        self.disconnect_button = tk.Button(button_frame, text="Desconecta", command=self.desconecta_sysqb,relief=tk.RAISED,
-        bd=4,
-        height=2,
-        width=10,
-        font=("Arial", 14, "bold"),
-        bg="#e0e0e0",
-        fg="black",
-        activebackground="#cccccc",
-        activeforeground="black")
-        self.disconnect_button.grid(row=0, column=0, padx=20, pady=5, sticky="e")
-
-        # Etiqueta, cajita y contador para "Mesa No." (columna 1)
-        mesa_container = tk.Frame(button_frame)
-        mesa_container.grid(row=0, column=1, padx=20, pady=5)
-        self.mesa_label = tk.Label(mesa_container, text="Mesa No.", font=("Arial", 14))
-        self.mesa_label.pack(side=tk.LEFT, padx=5)
-        self.mesa_entry = tk.Entry(mesa_container, font=("Arial", 14), width=4)
-        self.mesa_entry.pack(side=tk.RIGHT, padx=5)
-        self.mesa_entry.insert(0, " 1")  # Establecer el valor predeterminado a 1
-
-        # Botón Conecta a la extrema derecha (columna 2) 
-        style.configure("Green.TButton", foreground="#1094F9", font=("Arial", 14, "bold"))
-        self.connect_button = ttk.Button(button_frame, text="Conecta con SysQB", command=self.conecta_sysqb, style="Green.TButton")
-        self.connect_button.grid(row=0, column=2, padx=20, pady=5, sticky="e")
 
     # Actualiza la cajita de PIEZA No. y la cajita de sorteo accionada
     def actualiza_cajitas(self, pieza_numero, idx):
