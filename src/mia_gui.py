@@ -11,7 +11,7 @@ import asyncio
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Raspberry Pi            Ver 4.0")
+        self.root.title("Wong Instruments             MIA - Raspberry Pi            Ver 4.1")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
@@ -37,12 +37,12 @@ class MiaGui:
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Sub-frame para las áreas de texto
-        text_frame = tk.Frame(main_frame)
-        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, pady=(20, 0))
+        text_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
+        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, pady=(6, 4))
 
         # Título y área de TX
         tk.Label(text_frame, text="Tx al servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
-        self.text_area_tx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=50, height=5, font=("DejaVu Sans Mono", 11))
+        self.text_area_tx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=45, height=5, font=("DejaVu Sans Mono", 11))
         self.text_area_tx.pack(pady=(0, 10), padx=(10, 10))
         # Agrega margen interno al texto
         self.text_area_tx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
@@ -50,7 +50,7 @@ class MiaGui:
 
         # Título y área de RX
         tk.Label(text_frame, text="Rx del servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
-        self.text_area_rx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=50, height=5, font=("DejaVu Sans Mono", 11))
+        self.text_area_rx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=45, height=5, font=("DejaVu Sans Mono", 11))
         self.text_area_rx.pack(pady=(0, 10), padx=(10, 10))
         # Agrega margen interno al texto
         self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
@@ -71,14 +71,14 @@ class MiaGui:
         # Etiqueta y campo para URL de conexión (a la derecha del círculo)
         self.url_label = tk.Label(signal_frame, text="URL:", font=("DejaVu Sans Mono", 12))
         self.url_label.pack(side=tk.LEFT, padx=(15, 2))
-        self.url_entry = tk.Entry(signal_frame, font=("DejaVu Sans Mono", 12), width=38)
+        self.url_entry = tk.Entry(signal_frame, font=("DejaVu Sans Mono", 12), width=35)
         self.url_entry.pack(side=tk.LEFT, padx=(0, 10))
         #self.url_entry.insert(0, "wss://example.com/socket")  # Valor por defecto
         self.url_entry.insert(0,self.websocket_mia.url)  # Valor por defecto
        
         # Contenedor para los botones de Desconecta, Conecta y No. de Mesa (movido aquí desde abajo)
         button_frame = tk.Frame(text_frame)
-        button_frame.pack(fill=tk.X, pady=30)
+        button_frame.pack(fill=tk.X, pady=30, padx=(10, 10))
 
         # Botón Desconecta a la extrema izquierda (columna 0)
         style = ttk.Style()
@@ -92,11 +92,11 @@ class MiaGui:
             fg="black",
             activebackground="#cccccc",
             activeforeground="black")
-        self.disconnect_button.grid(row=0, column=0, padx=20, pady=5, sticky="e")
+        self.disconnect_button.grid(row=0, column=0, padx=10, pady=5, sticky="e")
 
         # Etiqueta, cajita y contador para "Mesa No." (columna 1)
         mesa_container = tk.Frame(button_frame)
-        mesa_container.grid(row=0, column=1, padx=20, pady=5)
+        mesa_container.grid(row=0, column=1, padx=10, pady=5)
         self.mesa_label = tk.Label(mesa_container, text="Mesa No.", font=("Arial", 14))
         self.mesa_label.pack(side=tk.LEFT, padx=5)
         self.mesa_entry = tk.Entry(mesa_container, font=("Arial", 14), width=4)
@@ -114,7 +114,7 @@ class MiaGui:
             fg="black",
             activebackground="#cccccc",
             activeforeground="black")                             
-        self.connect_button.grid(row=0, column=2, padx=20, pady=5, sticky="e")
+        self.connect_button.grid(row=0, column=2, padx=10, pady=5, sticky="e")
 
         # Función de respuesta (callback) para el tacto de las cajitas de sorteo
         def make_incrementa_callback(idx):
@@ -125,7 +125,7 @@ class MiaGui:
 
         # Sub-frame para el despliegue de las cajitas y botoneras de sorteo (OK, NG-nn)
         variable_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        variable_frame.pack(side=tk.RIGHT, fill=tk.Y, pady=(15, 0), padx=10)
+        variable_frame.pack(side=tk.RIGHT, fill=tk.Y, pady=(6, 4), padx=10)
 
         # Etiqueta, cajita y contador para "PIEZA"
         pieza_container = tk.Frame(variable_frame)
@@ -141,9 +141,9 @@ class MiaGui:
         multiplicador_frame.pack(pady=(0, 5), fill=tk.X)
         self.multiplicador_var = tk.IntVar(value=1)
 
-        radio_x1 = tk.Radiobutton(multiplicador_frame, text="x1", variable=self.multiplicador_var, value=1)
-        radio_x10 = tk.Radiobutton(multiplicador_frame, text="x10", variable=self.multiplicador_var, value=10)
-        radio_x100 = tk.Radiobutton(multiplicador_frame, text="x100", variable=self.multiplicador_var, value=100)
+        radio_x1 = tk.Radiobutton(multiplicador_frame, text="x1", variable=self.multiplicador_var, value=1, font=("Arial", 16))
+        radio_x10 = tk.Radiobutton(multiplicador_frame, text="x10", variable=self.multiplicador_var, value=10, font=("Arial", 16))
+        radio_x100 = tk.Radiobutton(multiplicador_frame, text="x100", variable=self.multiplicador_var, value=100, font=("Arial", 16))
 
         radio_x1.pack(side=tk.LEFT, padx=10)
         radio_x10.pack(side=tk.LEFT, padx=10)
@@ -158,14 +158,14 @@ class MiaGui:
         # Etiqueta, cajita y contador para "Piezas OK"
         pza_ok_container = tk.Frame(variable_frame)
         pza_ok_container.pack(pady=10, fill=tk.X)
-        self.pza_ok_label = tk.Label(pza_ok_container, text="Piezas OK", font=("Arial", 12))
+        self.pza_ok_label = tk.Label(pza_ok_container, text="Piezas OK", font=("Arial", 14))
         self.pza_ok_label.pack(side=tk.LEFT, padx=5)
         self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 16), width=8)
         self.pza_ok_entry.pack(side=tk.RIGHT, padx=5)
         ok_btn = tk.Canvas(pza_ok_container, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ok_btn.pack(side=tk.RIGHT, padx=5)
-        rect_ok_1 = ok_btn.create_rectangle(2, 2, 26, 26, fill="#7CBB00", outline="")
-        rect_ok_2 = ok_btn.create_rectangle(6, 6, 22, 22, fill="white", outline="")
+        rect_ok_1 = ok_btn.create_rectangle(0, 0, 28, 28, fill="#7CBB00", outline="")
+        rect_ok_2 = ok_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
         ok_btn.bind("<Button-1>", make_incrementa_callback(0))
         
         # Crea el efecto "Hover" para la cajita de "Piezas OK"
@@ -179,14 +179,14 @@ class MiaGui:
         # Etiqueta, cajita y contador para "Piezas NG-1"
         pza_ng_container = tk.Frame(variable_frame)
         pza_ng_container.pack(pady=5, fill=tk.X)
-        self.pza_ng_label = tk.Label(pza_ng_container, text="Piezas NG-1", font=("Arial", 12))
+        self.pza_ng_label = tk.Label(pza_ng_container, text="Piezas NG-1", font=("Arial", 14))
         self.pza_ng_label.pack(side=tk.LEFT, padx=5)
         self.pza_ng_entry = tk.Entry(pza_ng_container, font=("Arial", 16), width=8)
         self.pza_ng_entry.pack(side=tk.RIGHT, padx=5)
         ng1_btn = tk.Canvas(pza_ng_container, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ng1_btn.pack(side=tk.RIGHT, padx=5)
-        ng1_btn.create_rectangle(2, 2, 26, 26, fill="#F65314", outline="")
-        rect_ng1 = ng1_btn.create_rectangle(6, 6, 22, 22, fill="white", outline="")
+        ng1_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
+        rect_ng1 = ng1_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
         ng1_btn.bind("<Button-1>", make_incrementa_callback(1))
         
         # Crea el efecto "Hover" para la cajita de "Piezas NG-1"
@@ -200,14 +200,14 @@ class MiaGui:
         # Etiqueta, cajita y contador para "Piezas NG-2"
         pza_ng_container_2 = tk.Frame(variable_frame)
         pza_ng_container_2.pack(pady=5, fill=tk.X)
-        self.pza_ng_label_2 = tk.Label(pza_ng_container_2, text="Piezas NG-2", font=("Arial", 12))
+        self.pza_ng_label_2 = tk.Label(pza_ng_container_2, text="Piezas NG-2", font=("Arial", 14))
         self.pza_ng_label_2.pack(side=tk.LEFT, padx=5)
         self.pza_ng_entry_2 = tk.Entry(pza_ng_container_2, font=("Arial", 16), width=8)
         self.pza_ng_entry_2.pack(side=tk.RIGHT, padx=5)
         ng2_btn = tk.Canvas(pza_ng_container_2, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ng2_btn.pack(side=tk.RIGHT, padx=5)
-        ng2_btn.create_rectangle(2, 2, 26, 26, fill="#F65314", outline="")
-        rect_ng2 = ng2_btn.create_rectangle(6, 6, 22, 22, fill="white", outline="")
+        ng2_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
+        rect_ng2 = ng2_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
         ng2_btn.bind("<Button-1>", make_incrementa_callback(2))
         
         # Crea el efecto "Hover" para la cajita de "Piezas NG-2"
@@ -221,14 +221,14 @@ class MiaGui:
         # Etiqueta, cajita y contador para "Piezas NG-3"
         pza_ng_container_3 = tk.Frame(variable_frame)
         pza_ng_container_3.pack(pady=5, fill=tk.X)
-        self.pza_ng_label_3 = tk.Label(pza_ng_container_3, text="Piezas NG-3", font=("Arial", 12))
+        self.pza_ng_label_3 = tk.Label(pza_ng_container_3, text="Piezas NG-3", font=("Arial", 14))
         self.pza_ng_label_3.pack(side=tk.LEFT, padx=5)
         self.pza_ng_entry_3 = tk.Entry(pza_ng_container_3, font=("Arial", 16), width=8)
         self.pza_ng_entry_3.pack(side=tk.RIGHT, padx=5)
         ng3_btn = tk.Canvas(pza_ng_container_3, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ng3_btn.pack(side=tk.RIGHT, padx=5)
-        ng3_btn.create_rectangle(2, 2, 26, 26, fill="#F65314", outline="")
-        rect_ng3 = ng3_btn.create_rectangle(6, 6, 22, 22, fill="white", outline="")
+        ng3_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
+        rect_ng3 = ng3_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
         ng3_btn.bind("<Button-1>", make_incrementa_callback(3))
         
         # Crea el efecto "Hover" para la cajita de "Piezas NG-3"
@@ -242,14 +242,14 @@ class MiaGui:
         # Etiqueta, cajita y contador para "Piezas NG-4"
         pza_ng_container_4 = tk.Frame(variable_frame)
         pza_ng_container_4.pack(pady=5, fill=tk.X)
-        self.pza_ng_label_4 = tk.Label(pza_ng_container_4, text="Piezas NG-4", font=("Arial", 12))
+        self.pza_ng_label_4 = tk.Label(pza_ng_container_4, text="Piezas NG-4", font=("Arial", 14))
         self.pza_ng_label_4.pack(side=tk.LEFT, padx=5)
         self.pza_ng_entry_4 = tk.Entry(pza_ng_container_4, font=("Arial", 16), width=8)
         self.pza_ng_entry_4.pack(side=tk.RIGHT, padx=5)
         ng4_btn = tk.Canvas(pza_ng_container_4, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ng4_btn.pack(side=tk.RIGHT, padx=5)
-        ng4_btn.create_rectangle(2, 2, 26, 26, fill="#F65314", outline="")
-        rect_ng4 = ng4_btn.create_rectangle(6, 6, 22, 22, fill="white", outline="")
+        ng4_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
+        rect_ng4 = ng4_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
         ng4_btn.bind("<Button-1>", make_incrementa_callback(4))
         
         # Crea el efecto "Hover" para la cajita de "Piezas NG-4"
@@ -263,14 +263,14 @@ class MiaGui:
         # Etiqueta, cajita y contador para "Piezas NG-5"
         pza_ng_container_5 = tk.Frame(variable_frame)
         pza_ng_container_5.pack(pady=5, fill=tk.X)
-        self.pza_ng_label_5 = tk.Label(pza_ng_container_5, text="Piezas NG-5", font=("Arial", 12))
+        self.pza_ng_label_5 = tk.Label(pza_ng_container_5, text="Piezas NG-5", font=("Arial", 14))
         self.pza_ng_label_5.pack(side=tk.LEFT, padx=5)
         self.pza_ng_entry_5 = tk.Entry(pza_ng_container_5, font=("Arial", 16), width=8)
         self.pza_ng_entry_5.pack(side=tk.RIGHT, padx=5)
         ng5_btn = tk.Canvas(pza_ng_container_5, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ng5_btn.pack(side=tk.RIGHT, padx=5)
-        ng5_btn.create_rectangle(2, 2, 26, 26, fill="#F65314", outline="")
-        rect_ng5 = ng5_btn.create_rectangle(6, 6, 22, 22, fill="white", outline="")
+        ng5_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
+        rect_ng5 = ng5_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
         ng5_btn.bind("<Button-1>", make_incrementa_callback(5))
         
         # Crea el efecto "Hover" para la cajita de "Piezas NG-5"
@@ -284,14 +284,14 @@ class MiaGui:
         # Etiqueta, cajita y contador para "Piezas NG-MIX"
         pza_ng_container_mix = tk.Frame(variable_frame)
         pza_ng_container_mix.pack(pady=20, fill=tk.X)
-        self.pza_ng_label_mix = tk.Label(pza_ng_container_mix, text="Piezas NG-MIX", font=("Arial", 12))
+        self.pza_ng_label_mix = tk.Label(pza_ng_container_mix, text="Piezas NG-MIX", font=("Arial", 14))
         self.pza_ng_label_mix.pack(side=tk.LEFT, padx=5)
         self.pza_ng_entry_mix = tk.Entry(pza_ng_container_mix, font=("Arial", 16), width=8)
         self.pza_ng_entry_mix.pack(side=tk.RIGHT, padx=5)
         ngmix_btn = tk.Canvas(pza_ng_container_mix, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ngmix_btn.pack(side=tk.RIGHT, padx=5)
-        ngmix_btn.create_rectangle(2, 2, 26, 26, fill="#BB10F9", outline="")
-        rect_ngmix = ngmix_btn.create_rectangle(6, 6, 22, 22, fill="white", outline="")
+        ngmix_btn.create_rectangle(0, 0, 28, 28, fill="#BB10F9", outline="")
+        rect_ngmix = ngmix_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
         ngmix_btn.bind("<Button-1>", make_incrementa_callback(6))
         
         # Crea el efecto "Hover" para la cajita de "Piezas NG-MIX"
@@ -335,18 +335,18 @@ class MiaGui:
             self.boton_circular_dibujos.append((circulo_ext, circulo_interior))
             self.boton_circular_lienzos.append(canvas_btn)
 
-        # Sub-frame para los botones de INICIA y TERMINA
-        conteo_buttons_frame = tk.Frame(variable_frame)
-        conteo_buttons_frame.pack(side=tk.BOTTOM, pady=30, anchor=tk.CENTER)
+        # # Sub-frame para los botones de INICIA y TERMINA
+        # conteo_buttons_frame = tk.Frame(variable_frame)
+        # conteo_buttons_frame.pack(side=tk.BOTTOM, pady=30, anchor=tk.CENTER)
 
-        # Botón para iniciar el conteo
-        self.inic_conteo_button = tk.Button(conteo_buttons_frame, text="INICIA ", command=self.sorteo.inicia_conteo)
-        self.inic_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
+        # # Botón para iniciar el conteo
+        # self.inic_conteo_button = tk.Button(conteo_buttons_frame, text="INICIA ", command=self.sorteo.inicia_conteo)
+        # self.inic_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
 
-        # Botón para detener el conteo
-        #self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="--------", command=self.sorteo.detiene_conteo)
-        self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="TERMINA", command=self.sorteo.fin_conteo)
-        self.detiene_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
+        # # Botón para detener el conteo
+        # #self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="--------", command=self.sorteo.detiene_conteo)
+        # self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="TERMINA", command=self.sorteo.fin_conteo)
+        # self.detiene_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
 
 
     # Actualiza la cajita de PIEZA No. y la cajita de sorteo accionada

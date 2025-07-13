@@ -10,17 +10,18 @@ URL_SIMULADOR = "ws://shielded-taiga-04156.herokuapp.com/cable"
 
 class WebSocketMia:
     def __init__(self, gui):
-        self.url = URL_SIMULADOR
+        self.url = URL_MEZTLI
+        #self.url = URL_SIMULADOR
         self.gui = gui
         self.ws = None
         self.is_running = False
-       
+        self.keep_alive  = False       
     async def conecta_async(self):
         # Conexión al WebSocket de Rails
         try:
             sysqb_socket = await websockets.connect(self.url, ping_interval=20, ping_timeout=10)
-            print("🔌 Conectado al WebSocket de Rails\n")
-            self.gui.despliega_mensaje_tx("\n🔌 Conectado al WebSocket de Rails")
+            print("🔌 Conectando al WebSocket de Rails")
+            self.gui.despliega_mensaje_tx("🔌 Conectando al WebSocket de Rails")
 
             # Inicia la tarea para leer mensajes del servidor SysQB
             asyncio.create_task(self.lector_websocket(sysqb_socket))
@@ -51,7 +52,7 @@ class WebSocketMia:
         }
         try:
             await sysqb_socket.send(json.dumps(mensaje))
-            print("📡 Enviado:", mensaje)
+            print("\n📡 Enviado:", mensaje)
             self.gui.despliega_mensaje_tx(f"{mensaje['data']}")
             
         except websockets.exceptions.ConnectionClosedError as e:
@@ -65,22 +66,29 @@ class WebSocketMia:
                 data = json.loads(mensaje)
                 # Procesa el mensaje según su tipo
                 if data.get("type") == "ping":
-                    print("📡 Keep-Alive recibido del servidor")
-                    try:
-                        await sysqb_socket.send(json.dumps({"type": "pong"}))
-                        print("📡 Pong enviado al servidor")
-                    except Exception as e:
-                        print("❌ Error al enviar pong:", e)
+                    if self.keep_alive == False:
+                        print("📡 Keep-Alive recibido del servidor: ", time.strftime("%H:%M:%S") , end="", flush=True)
+                        self.keep_alive = True
+                    print(".", end="", flush=True)
+                elif data.get("type") == "welcome":
+                    print("\n✅ Conexión WebSocket establecida (welcome)")
+                    self.gui.despliega_mensaje_rx("Conexión WebSocket establecida (welcome)")
+                elif data.get("type") == "confirm_subscription":
+                    identifier = json.loads(data.get("identifier", "{}"))
+                    mia_id = identifier.get("mia_id")
+                    print(f"\n✅ Suscripción confirmada al canal {mia_id}") 
+                    self.gui.despliega_mensaje_rx(f"Suscripción confirmada al canal {mia_id}")
                 elif data.get("message"):
-                    print("📡 Mensaje recibido:", data["message"])
+                    self.keep_alive = False
+                    print("\n📡 Mensaje recibido:", time.strftime("%H:%M:%S"), data["message"])
                     self.gui.despliega_mensaje_rx(f"📡  {data.get('message')}")
                     if data.get("message", {}).get("accion") == "INICIA_FOLIO":
                         self.gui.sorteo.inicia_conteo()
                 else:
-                    print("📡 Mensaje desconocido:", data)
+                    print("\n📡 Mensaje desconocido:", data)
                     self.gui.despliega_mensaje_rx(f"📡  Mensaje desconocido: {data}\n" )
             except websockets.exceptions.ConnectionClosedError as e:
-                print("❌ Conexión cerrada:", e)
+                print("\n❌ Conexión cerrada:", e)
                 self.gui.despliega_mensaje_tx("❌ Conexión cerrada, intenta reconectar...\n")
                 break
 
@@ -91,8 +99,8 @@ class WebSocketMia:
         }
         try:
             await sysqb_socket.send(json.dumps(mensaje_suscribir))
-            print(f"🔗  Suscrito al canal MiaChannel: {mesa_id}")
-            self.gui.despliega_mensaje_tx(f"🔗  Suscrito al canal MiaChannel: {mesa_id}\n")
+            print(f"🔗  Suscribiéndose al canal MiaChannel: {mesa_id}")
+            self.gui.despliega_mensaje_tx(f"🔗  Suscribiéndose al canal MiaChannel: {mesa_id}")
             return True  # Indica éxito 
         except Exception as e:
             print(f"❌ Error al enviar el mensaje de suscripción: {e}")
