@@ -17,7 +17,19 @@ class ManejadorPortal:
     def muestrea_portal(self):
         while True:
             valor = GPIO.input(4)
-            if valor == 0:   # Si el GPIO3 está en estado bajo, se considera un evento de conteo
-                print("🔔 Evento de conteo detectado en el portal\n" )
+            if valor == 0:
+                print("🔔 Evento de conteo detectado en el portal\n")
+                # Espera hasta que el valor regrese a 1
+                while GPIO.input(4) == 0:
+                    time.sleep(0.05)
+                # Verifica que se mantenga en 1 durante al menos 2 segundos
+                tiempo_estable = time.time()
+                while GPIO.input(4) == 1:
+                    if time.time() - tiempo_estable >= 2:
+                        break
+                    time.sleep(0.1)
+                else:
+                    # Si salió del ciclo sin cumplir los 2 segundos, no cuenta como evento válido
+                    continue
                 self.sorteo.incrementa_contador(self.ok)
-            time.sleep(0.1)  # Ajusta el tiempo de muestreo según necesida
+            time.sleep(0.1)
