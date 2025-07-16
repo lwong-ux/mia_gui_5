@@ -13,7 +13,7 @@ import psutil
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Raspberry Pi            Ver 4.1")
+        self.root.title("Wong Instruments             MIA - Raspberry Pi            Ver 4.2")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
