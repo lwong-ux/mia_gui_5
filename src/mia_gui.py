@@ -5,7 +5,9 @@ from PIL import Image, ImageTk
 from tkinter import scrolledtext
 from mia_websocket import WebSocketMia
 from mia_sorteo import ManejadorSorteo
+from mia_portal import ManejadorPortal
 import asyncio
+import psutil
 
 
 class MiaGui:
@@ -24,12 +26,17 @@ class MiaGui:
         
         self.websocket_mia = WebSocketMia(self) 
         self.sorteo = ManejadorSorteo(self)
+        self.portal = ManejadorPortal(self.sorteo)
         self.inicia_conteo = False
         self.detiene_conteo = False
         self.sysqb_socket = None
         self.mesa_id = "MIA-01"  # ID de la mesa por omisión
+        self.conectado = False
+        self.despliega_mensaje = False
         self.create_widgets()
-        
+        self.supervisa_conexion()
+
+
     def create_widgets(self):
 
         # Contenedor principal para organizar las áreas de texto y los botones de sorteo de piezas
@@ -335,19 +342,35 @@ class MiaGui:
             self.boton_circular_dibujos.append((circulo_ext, circulo_interior))
             self.boton_circular_lienzos.append(canvas_btn)
 
-        # # Sub-frame para los botones de INICIA y TERMINA
-        # conteo_buttons_frame = tk.Frame(variable_frame)
-        # conteo_buttons_frame.pack(side=tk.BOTTOM, pady=30, anchor=tk.CENTER)
 
-        # # Botón para iniciar el conteo
-        # self.inic_conteo_button = tk.Button(conteo_buttons_frame, text="INICIA ", command=self.sorteo.inicia_conteo)
-        # self.inic_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
+    # Tarea periódica para supervisar el estado de conexión
+    def supervisa_conexion(self):
+        
+        if not self.conectado or not self.wifi_activo():
+            self.alerta_desconexión()
+            self.despliega_mensaje = True
+        else:
+            self.signal_canvas.itemconfig(self.signal_circle, fill="yellow")
+            if self.despliega_mensaje:
+                self.text_area_rx.insert("1.0", "Conexión establecida con el servidor SysQB.\n", "margin")
+                self.despliega_mensaje = False
+        self.root.after(1000, self.supervisa_conexion)
 
-        # # Botón para detener el conteo
-        # #self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="--------", command=self.sorteo.detiene_conteo)
-        # self.detiene_conteo_button = tk.Button(conteo_buttons_frame, text="TERMINA", command=self.sorteo.fin_conteo)
-        # self.detiene_conteo_button.pack(side=tk.LEFT, padx=5)  # Alinear a la izquierda con un espacio entre botones
+    def alerta_desconexión(self):
+        # Puedes mostrar un mensaje en la GUI, cambiar colores, etc.
+        self.signal_canvas.itemconfig(self.signal_circle, fill="red")
+        if (self.conectado):
+            self.text_area_rx.insert("1.0", "Wi-Fi desconectado!!\n", "margin")
+        else:
+            self.text_area_rx.insert("1.0", "Websocket desconectado!!\n", "margin")
 
+    def wifi_activo(self):
+        for iface, addrs in psutil.net_if_addrs().items():
+            if "wlan" in iface or "wifi" in iface.lower():
+                stats = psutil.net_if_stats()[iface]
+                if stats.isup:
+                    return True
+        return False
 
     # Actualiza la cajita de PIEZA No. y la cajita de sorteo accionada
     def actualiza_cajitas(self, pieza_numero, idx):
@@ -424,23 +447,21 @@ class MiaGui:
         except ValueError:
             return 1  # Valor predeterminado si no es un número válido
 
-    def connect_websocket(self):
-        self.websocket_mia.connect()
-        # Cambia el color del círculo a amarillo (encendido)
-        self.signal_canvas.itemconfig(self.signal_circle, fill="#F9F110")
+    # def connect_websocket(self):
+    #     self.websocket_mia.connect()
+    #     # Cambia el color del círculo a amarillo (encendido)
+    #     self.signal_canvas.itemconfig(self.signal_circle, fill="#F9F110")
     
     def conecta_sysqb(self):
         loop = asyncio.get_event_loop()
         loop.create_task(self._conecta_sysqb_async())
        
     async def _conecta_sysqb_async(self):
-        self.sysqb_socket = await self.websocket_mia.conecta_async()
+        socket = await self.websocket_mia.conecta_async(self.mesa_id)
         self.mesa_id = "MIA-" + str(self.lee_mesa()).zfill(2)  # Formato "MIA-01"
-        suscripcion = await self.websocket_mia.suscribe(self.sysqb_socket, self.mesa_id)
-        if not suscripcion:
-            return
-        # Cambia el color del círculo a amarillo (encendido)
-        self.signal_canvas.itemconfig(self.signal_circle, fill="yellow")
+        if (socket):    
+            # Cambia el color del círculo a amarillo (encendido)
+            self.signal_canvas.itemconfig(self.signal_circle, fill="yellow")
 
     def desconecta_sysqb(self):
         # Detiene el conteo
@@ -454,7 +475,7 @@ class MiaGui:
     
     async def _desconecta_sysqb_async(self): 
         # Desconecta el WebSocket
-        await self.websocket_mia.desconecta_async(self.sysqb_socket)
+        await self.websocket_mia.desconecta_async()
         
         # Cambia el color del círculo a gris (apagado)
         self.signal_canvas.itemconfig(self.signal_circle, fill="gray")

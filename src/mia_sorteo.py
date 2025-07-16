@@ -121,7 +121,7 @@ class ManejadorSorteo:
             inci.append(incidentes[idx])
         pieza_inspec = {"pieza": pieza, "multiplicador": self.multiplicador, "piezas_ok": ok, "piezas_ng": ng, "incidentes": inci}
         datos = {"tipo": "comando", "accion": "PIEZA_INSPEC", "folio": self.folio, "mesa": mia_id, "pieza_inspec": pieza_inspec}
-        await self.gui.websocket_mia.envia_mensaje(self.gui.sysqb_socket, mia_id, datos)
+        await self.gui.websocket_mia.envia_mensaje(mia_id, datos)
 
     def inicia_folio(self):
         loop = asyncio.get_event_loop()
