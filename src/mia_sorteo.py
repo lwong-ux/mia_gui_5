@@ -5,6 +5,7 @@ import time
 class ManejadorSorteo:
     def __init__(self, gui):
         self.gui = gui
+        self.loop = asyncio.get_event_loop()
         # Inicializa los contadores de las cajitas de sorteo
         self.contadores_cajitas = [0] * 7           # OK, NG-1, NG-2, NG-3, NG-4, NG-5, NG-MIX
         self.estado_botones_inci = [False] * 5      # Estado de los botones de incidentes
@@ -101,8 +102,10 @@ class ManejadorSorteo:
         else:
             ng = self.multiplicador  
 
-        loop = asyncio.get_event_loop()
-        self._conteo_task = loop.create_task(self._pieza_inspeccionada(self.pieza_numero, idx, ok, ng))
+        asyncio.run_coroutine_threadsafe(
+            self._pieza_inspeccionada(self.pieza_numero, idx, ok, ng),
+            self.loop
+        )
         self.pieza_numero += self.multiplicador
         self.gui.actualiza_cajitas(self.pieza_numero, idx)
 

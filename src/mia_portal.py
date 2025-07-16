@@ -19,5 +19,5 @@ class ManejadorPortal:
             valor = GPIO.input(4)
             if valor == 0:   # Si el GPIO3 está en estado bajo, se considera un evento de conteo
                 print("🔔 Evento de conteo detectado en el portal\n" )
-                #self.sorteo.incrementa_contador(self.ok)
+                self.sorteo.incrementa_contador(self.ok)
             time.sleep(0.1)  # Ajusta el tiempo de muestreo según necesida
