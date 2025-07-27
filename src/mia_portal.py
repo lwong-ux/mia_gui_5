@@ -28,23 +28,23 @@ NG_INDICE = 6   # Índice en el arreglo de cajitas para ng mix
 class ManejadorPortal:
     def __init__(self, sorteo):
         self.sorteo = sorteo
-        
-        # Configuración de los GPIOs
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(OK_SENSOR, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(NG_SENSOR, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(OK_LED, GPIO.OUT)
-        GPIO.setup(NG_LED, GPIO.OUT)
-        GPIO.output(OK_LED, True)
-        GPIO.output(NG_LED, True)
-        print("🔔 Manejador de portal inicializado, esperando eventos...\n")
 
-        # Inicia la tarea para muestrear el portal en un hilo separado
-        #threading.Thread(target=self.muestrea_portal, daemon=True).start()
+        if ES_RPI:
+            # Configuración de los GPIOs
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(OK_SENSOR, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.setup(NG_SENSOR, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.setup(OK_LED, GPIO.OUT)
+            GPIO.setup(NG_LED, GPIO.OUT)
+            GPIO.output(OK_LED, True)
+            GPIO.output(NG_LED, True)
+            print("🔔 Manejador de portal inicializado, esperando eventos...\n")
 
-        # Registra las interrupciones por flanco de bajada
-        GPIO.add_event_detect(OK_SENSOR, GPIO.FALLING, callback=self._callback_ok, bouncetime=200)
-        GPIO.add_event_detect(NG_SENSOR, GPIO.FALLING, callback=self._callback_ng, bouncetime=200)
+            # Registra las interrupciones por flanco de bajada
+            GPIO.add_event_detect(OK_SENSOR, GPIO.FALLING, callback=self._callback_ok, bouncetime=200)
+            GPIO.add_event_detect(NG_SENSOR, GPIO.FALLING, callback=self._callback_ng, bouncetime=200)
+        else:
+            print("⚠️  No es Raspberry Pi: ManejadorPortal se inicializa sin GPIO.")
 
     def _callback_ok(self, channel):
         if self._confirma_evento(OK_SENSOR, OK_LED):
@@ -106,5 +106,5 @@ class ManejadorPortal:
                 return False
         return False
 
-        
+
 

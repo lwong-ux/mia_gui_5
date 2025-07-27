@@ -106,9 +106,16 @@ class MiaGui:
         mesa_container.grid(row=0, column=1, padx=10, pady=5)
         self.mesa_label = tk.Label(mesa_container, text="Mesa No.", font=("Arial", 14))
         self.mesa_label.pack(side=tk.LEFT, padx=5)
-        self.mesa_entry = tk.Entry(mesa_container, font=("Arial", 14), width=4)
-        self.mesa_entry.pack(side=tk.RIGHT, padx=5)
-        self.mesa_entry.insert(0, " 1")  # Establecer el valor predeterminado a 1
+        
+        # Menú desplegable con opciones de 1 a 16
+        self.mesa_var = tk.StringVar(value="1")
+        self.mesa_menu = ttk.Combobox(mesa_container, textvariable=self.mesa_var, font=("Arial", 14), width=4, state="readonly")
+        self.mesa_menu['values'] = [str(i) for i in range(1, 17)]
+        self.mesa_menu.current(0)  # Selecciona la primera opción por defecto
+        self.mesa_menu.pack(side=tk.RIGHT, padx=5)
+        # self.mesa_entry = tk.Entry(mesa_container, font=("Arial", 14), width=4)
+        # self.mesa_entry.pack(side=tk.RIGHT, padx=5)
+        # self.mesa_entry.insert(0, " 1")  # Establecer el valor predeterminado a 1
 
         # Botón Conecta a la extrema derecha (columna 2)
         style.configure("Green.TButton", foreground="#1094F9", font=("DejaVu Sans Mono", 14))
@@ -365,10 +372,12 @@ class MiaGui:
             self.text_area_rx.insert("1.0", "Websocket desconectado!!\n", "margin")
 
     def wifi_activo(self):
+        # Busca interfaces típicas de Wi-Fi en Linux, Mac y Windows
+        wifi_keywords = ["wlan", "wifi", "wl", "en0", "en1"]
         for iface, addrs in psutil.net_if_addrs().items():
-            if "wlan" in iface or "wifi" in iface.lower():
-                stats = psutil.net_if_stats()[iface]
-                if stats.isup:
+            if any(keyword in iface.lower() for keyword in wifi_keywords):
+                stats = psutil.net_if_stats().get(iface)
+                if stats and stats.isup:
                     return True
         return False
 
@@ -443,7 +452,7 @@ class MiaGui:
          
     def lee_mesa(self):
         try:
-            return int(self.mesa_entry.get().strip())  # Convierte a entero y elimina espacios en blanco
+            return int(self.mesa_var.get())  # Convierte a entero y elimina espacios en blanco
         except ValueError:
             return 1  # Valor predeterminado si no es un número válido
 
@@ -457,8 +466,8 @@ class MiaGui:
         loop.create_task(self._conecta_sysqb_async())
        
     async def _conecta_sysqb_async(self):
-        socket = await self.websocket_mia.conecta_async(self.mesa_id)
         self.mesa_id = "MIA-" + str(self.lee_mesa()).zfill(2)  # Formato "MIA-01"
+        socket = await self.websocket_mia.conecta_async(self.mesa_id)
         if (socket):    
             # Cambia el color del círculo a amarillo (encendido)
             self.signal_canvas.itemconfig(self.signal_circle, fill="yellow")
