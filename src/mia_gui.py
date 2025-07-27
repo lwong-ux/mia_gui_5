@@ -47,25 +47,9 @@ class MiaGui:
         text_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
         text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, pady=(6, 4))
 
-        # Título y área de TX
-        tk.Label(text_frame, text="Tx al servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
-        self.text_area_tx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=45, height=5, font=("DejaVu Sans Mono", 11))
-        self.text_area_tx.pack(pady=(0, 10), padx=(10, 10))
-        # Agrega margen interno al texto
-        self.text_area_tx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
-        self.text_area_tx.insert("1.0", " ", "margin")  # Aplicar la configuración de margen
-
-        # Título y área de RX
-        tk.Label(text_frame, text="Rx del servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
-        self.text_area_rx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=45, height=5, font=("DejaVu Sans Mono", 11))
-        self.text_area_rx.pack(pady=(0, 10), padx=(10, 10))
-        # Agrega margen interno al texto
-        self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
-        self.text_area_rx.insert("1.0", " ", "margin")  # Aplicar la configuración de margen
-
         # Sub-frame para la señal de conexión
         signal_frame = tk.Frame(text_frame)
-        signal_frame.pack(side=tk.TOP, anchor=tk.NW, padx=30, pady=(50, 0))
+        signal_frame.pack(side=tk.TOP, anchor=tk.NW, padx=20, pady=(20, 40))
         
         # Etiqueta para la señal de conexión
         tk.Label(signal_frame, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
@@ -82,10 +66,26 @@ class MiaGui:
         self.url_entry.pack(side=tk.LEFT, padx=(0, 10))
         #self.url_entry.insert(0, "wss://example.com/socket")  # Valor por defecto
         self.url_entry.insert(0,self.websocket_mia.url)  # Valor por defecto
+
+        # Título y área de TX
+        tk.Label(text_frame, text="Tx al servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
+        self.text_area_tx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=45, height=5, font=("DejaVu Sans Mono", 11))
+        self.text_area_tx.pack(pady=(0, 10), padx=(10, 10))
+        # Agrega margen interno al texto
+        self.text_area_tx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
+        self.text_area_tx.insert("1.0", " ", "margin")  # Aplicar la configuración de margen
+
+        # Título y área de RX
+        tk.Label(text_frame, text="Rx del servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
+        self.text_area_rx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=45, height=5, font=("DejaVu Sans Mono", 11))
+        self.text_area_rx.pack(pady=(0, 10), padx=(10, 10))
+        # Agrega margen interno al texto
+        self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
+        self.text_area_rx.insert("1.0", " ", "margin")  # Aplicar la configuración de margen
        
         # Contenedor para los botones de Desconecta, Conecta y No. de Mesa (movido aquí desde abajo)
         button_frame = tk.Frame(text_frame)
-        button_frame.pack(fill=tk.X, pady=30, padx=(10, 10))
+        button_frame.pack(fill=tk.X, pady=30, padx=(5, 5))
 
         # Botón Desconecta a la extrema izquierda (columna 0)
         style = ttk.Style()
