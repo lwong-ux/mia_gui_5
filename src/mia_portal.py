@@ -1,14 +1,29 @@
 import asyncio
 import threading
 import time
-import RPi.GPIO as GPIO
+import sys
+import os
+
+# Detecta si es una Raspberry Pi
+def es_raspberry_pi():
+    try:
+        with open('/proc/cpuinfo', 'r') as f:
+            cpuinfo = f.read()
+        return 'Raspberry' in cpuinfo or 'BCM' in cpuinfo
+    except Exception:
+        return False
+
+ES_RPI = es_raspberry_pi()
+if ES_RPI:
+    import RPi.GPIO as GPIO
+    print("\n Raspberry Pi detectada, configurando GPIOs...\n")
 
 OK_SENSOR = 2   # Número del pin BCM para sensar ok
 OK_LED = 17     # Número del pin BCM para led ok
 OK_INDICE = 0   # Índice en el arreglo de cajitas para ok
 NG_SENSOR = 3   # Número del pin GPIO según BCM para sensar ng
 NG_LED = 27     # Número del pin GPIO según BCM para led ng
-NG_INDICE = 7   # Índice en el arreglo de cajitas para ng mix
+NG_INDICE = 6   # Índice en el arreglo de cajitas para ng mix
 
 class ManejadorPortal:
     def __init__(self, sorteo):
