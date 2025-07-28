@@ -10,9 +10,10 @@ URL_SIMULADOR = "ws://shielded-taiga-04156.herokuapp.com/cable"
 
 class WebSocketMia:
     def __init__(self, gui):
-        self.url = URL_MEZTLI
+
         #self.url = URL_SIMULADOR
         self.gui = gui
+        self.url = self.gui.lee_url()  # Obtiene la URL desde la GUI
         self.ws = None
         self.is_running = False
         self.keep_alive  = False
@@ -23,6 +24,7 @@ class WebSocketMia:
        
         # Conexión al WebSocket de Rails
         try:
+            self.url = self.gui.lee_url()
             self.mesa_id = mia_id
             #sysqb_socket = await websockets.connect(self.url, ping_interval=60, ping_timeout=30)
             self.socket_activo = await websockets.connect(

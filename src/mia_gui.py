@@ -24,6 +24,7 @@ class MiaGui:
         logo_label = tk.Label(self.root, image=self.logo)
         logo_label.pack(side=tk.LEFT, pady=5, padx=10)  # Coloca el logo
         
+        self.url_var = tk.StringVar(value="ws://192.168.100.25:3000/cable")  # <--- Agrega esto aquí
         self.websocket_mia = WebSocketMia(self) 
         self.sorteo = ManejadorSorteo(self)
         self.portal = ManejadorPortal(self.sorteo)
@@ -62,10 +63,15 @@ class MiaGui:
         # Etiqueta y campo para URL de conexión (a la derecha del círculo)
         self.url_label = tk.Label(signal_frame, text="URL:", font=("DejaVu Sans Mono", 12))
         self.url_label.pack(side=tk.LEFT, padx=(15, 2))
-        self.url_entry = tk.Entry(signal_frame, font=("DejaVu Sans Mono", 12), width=35)
-        self.url_entry.pack(side=tk.LEFT, padx=(0, 10))
-        #self.url_entry.insert(0, "wss://example.com/socket")  # Valor por defecto
-        self.url_entry.insert(0,self.websocket_mia.url)  # Valor por defecto
+        
+        # Menú con opciones de URL
+        self.url_menu = ttk.Combobox(signal_frame, textvariable=self.url_var, font=("Arial", 14), width=30, state="readonly")
+        self.url_menu['values'] = ["ws://192.168.100.25:3000/cable", "ws://shielded-taiga-04156.herokuapp.com/cable"]
+        self.url_menu.current(0)  # Selecciona la primera opción por defecto
+        self.url_menu.pack(side=tk.RIGHT, padx=5)
+        # self.url_entry = tk.Entry(signal_frame, font=("DejaVu Sans Mono", 12), width=35)
+        # self.url_entry.pack(side=tk.LEFT, padx=(0, 10))
+        # self.url_entry.insert(0,self.websocket_mia.url)  # Valor por defecto
 
         # Título y área de TX
         tk.Label(text_frame, text="Tx al servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
@@ -107,7 +113,7 @@ class MiaGui:
         self.mesa_label = tk.Label(mesa_container, text="Mesa No.", font=("Arial", 14))
         self.mesa_label.pack(side=tk.LEFT, padx=5)
         
-        # Menú desplegable con opciones de 1 a 16
+        # Menú con opciones de mesa de 1 a 16 
         self.mesa_var = tk.StringVar(value="1")
         self.mesa_menu = ttk.Combobox(mesa_container, textvariable=self.mesa_var, font=("Arial", 14), width=4, state="readonly")
         self.mesa_menu['values'] = [str(i) for i in range(1, 17)]
@@ -456,6 +462,12 @@ class MiaGui:
         except ValueError:
             return 1  # Valor predeterminado si no es un número válido
 
+    def lee_url(self):
+        try:
+            return self.url_var.get()  
+        except ValueError:
+            return "ws://192.168.100.25:3000/cable"  # Valor predeterminado si no es un número válido
+    
     # def connect_websocket(self):
     #     self.websocket_mia.connect()
     #     # Cambia el color del círculo a amarillo (encendido)
