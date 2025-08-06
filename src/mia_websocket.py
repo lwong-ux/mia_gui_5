@@ -33,8 +33,8 @@ class WebSocketMia:
                 ping_timeout=None,       # deshabilita el timeout de ping
                 close_timeout=None       # no enforced close handshake timeout
             )
-            print("🔌 Conectando al WebSocket de Rails")
-            self.gui.despliega_mensaje_tx("🔌 Conectando al WebSocket de Rails")
+            print("Conectando al WebSocket de Rails")
+            self.gui.despliega_mensaje_tx("Conectando al WebSocket de Rails")
             
             # Se suscribe al canal MiaChannel con  identificador de mesa
             suscripcion = await self.suscribe(self.mesa_id)
@@ -50,7 +50,7 @@ class WebSocketMia:
             return self.socket_activo
            
         except Exception as e:
-            print(f"❌ Error al conectar al WebSocket de Rails: {e}")
+            print(f"Error al conectar al WebSocket de Rails: {e}")
             self.gui.despliega_mensaje_tx(f"Error al conectar al SysQB WebSocket: {e}\n")
             return None
         
@@ -63,22 +63,22 @@ class WebSocketMia:
                     await self.socket_activo.ping()
                 except Exception as e:
                     self.gui.conectado = False
-                    print(f"❌ Falló el envío del ping : {e}")
+                    print(f"Falló el envío del ping : {e}")
                     self.gui.conectado = False
                     # Si ping falla, la conexión se cerrará y lector_websocket lo detectará
                     break # Sale del bucle para que lector_websocket maneje la reconexión
         except Exception as e:
-            print(f"❌ Error en keepalive: {e}")
+            print(f"Error en keepalive: {e}")
     
     async def desconecta_async(self):
         # Desconecta el WebSocket
         try:
             await self.socket_activo.close()
-            print("🔌 Desconectado del WebSocket de Rails\n")
-            self.gui.despliega_mensaje_tx("🔌 Desconectado del WebSocket de Rails\n")
+            print("Desconectado del WebSocket de Rails\n")
+            self.gui.despliega_mensaje_tx("Desconectado del WebSocket de Rails\n")
             return True
         except Exception as e:
-            print(f"❌ Error al desconectar del WebSocket de Rails: {e}")
+            print(f"Error al desconectar del WebSocket de Rails: {e}")
             self.gui.despliega_mensaje_tx(f"Error al desconectar del SysQB WebSocket: {e}\n")
             return None
 
@@ -90,12 +90,12 @@ class WebSocketMia:
         }
         try:
             await self.socket_activo.send(json.dumps(mensaje))
-            print("\n📡 Enviado:", mensaje)
+            print("\nEnviado:", mensaje)
             self.gui.despliega_mensaje_tx(f"{mensaje['data']}")
             
         except websockets.exceptions.ConnectionClosedError as e:
-            print("❌ Conexión cerrada, intenta reconectar:", e)
-            self.gui.despliega_mensaje_tx("❌ Conexión cerrada, intenta reconectar...\n")
+            print("Conexión cerrada, intenta reconectar:", e)
+            self.gui.despliega_mensaje_tx("Conexión cerrada, intenta reconectar...\n")
         
     async def lector_websocket(self):
         while True:
@@ -105,30 +105,30 @@ class WebSocketMia:
                 # Procesa el mensaje según su tipo
                 if data.get("type") == "ping":
                     if self.keep_alive == False:
-                        print("📡 Keep-Alive recibido del servidor: ", time.strftime("%H:%M:%S") , end="", flush=True)
+                        print("Keep-Alive recibido del servidor: ", time.strftime("%H:%M:%S") , end="", flush=True)
                         self.keep_alive = True
                     print(".", end="", flush=True)
                 elif data.get("type") == "welcome":
-                    print("\n✅ Conexión WebSocket establecida (welcome)")
+                    print("\nConexión WebSocket establecida (welcome)")
                     self.gui.despliega_mensaje_rx("Conexión WebSocket establecida (welcome)")
                 elif data.get("type") == "confirm_subscription":
                     identifier = json.loads(data.get("identifier", "{}"))
                     mia_id = identifier.get("mia_id")
-                    print(f"\n✅ Suscripción confirmada al canal {mia_id}") 
+                    print(f"\nSuscripción confirmada al canal {mia_id}") 
                     self.gui.despliega_mensaje_rx(f"Suscripción confirmada al canal {mia_id}")
                 #elif data.get("message"):
                 elif data.get("message") and data.get("type") is None:
                     self.keep_alive = False
-                    print("\n📡 Mensaje recibido:", time.strftime("%H:%M:%S"), data["message"])
-                    self.gui.despliega_mensaje_rx(f"📡  {data.get('message')}")
+                    print("\nMensaje recibido:", time.strftime("%H:%M:%S"), data["message"])
+                    self.gui.despliega_mensaje_rx(f"{data.get('message')}")
                     if data.get("message", {}).get("accion") == "INICIA_FOLIO":
                         self.gui.sorteo.inicia_conteo()
                 else:
-                    print("\n📡 Mensaje desconocido:", data)
-                    self.gui.despliega_mensaje_rx(f"📡  Mensaje desconocido: {data}\n" )
+                    print("\nMensaje desconocido:", data)
+                    self.gui.despliega_mensaje_rx(f"Mensaje desconocido: {data}\n" )
             except websockets.exceptions.ConnectionClosedError as e:
-                print("\n❌ Conexión cerrada:", e)
-                self.gui.despliega_mensaje_tx("❌ Conexión cerrada, intenta reconectar...\n")
+                print("\nConexión cerrada:", e)
+                self.gui.despliega_mensaje_tx("Conexión cerrada, intenta reconectar...\n")
                 # Intentar reconectar después de unos segundos
                 self.gui.conectado = False
                 self.gui.supervisa_conexion()
@@ -144,10 +144,10 @@ class WebSocketMia:
         }
         try:
             await self.socket_activo.send(json.dumps(mensaje_suscribir))
-            print(f"🔗  Suscribiéndose al canal MiaChannel: {mesa_id}")
-            self.gui.despliega_mensaje_tx(f"🔗  Suscribiéndose al canal MiaChannel: {mesa_id}")
+            print(f"Suscribiéndose al canal MiaChannel: {mesa_id}")
+            self.gui.despliega_mensaje_tx(f"Suscribiéndose al canal MiaChannel: {mesa_id}")
             return True  # Indica éxito 
         except Exception as e:
-            print(f"❌ Error al enviar el mensaje de suscripción: {e}")
-            self.gui.despliega_mensaje_tx(f"❌ Error al enviar el mensaje de su suscripción: {e}\n")
+            print(f"Error al enviar el mensaje de suscripción: {e}")
+            self.gui.despliega_mensaje_tx(f"Error al enviar el mensaje de su suscripción: {e}\n")
             return False

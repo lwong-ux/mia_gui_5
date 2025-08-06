@@ -8,12 +8,13 @@ from mia_sorteo import ManejadorSorteo
 from mia_portal import ManejadorPortal
 import asyncio
 import psutil
+import random
 
 
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Raspberry Pi            Ver 4.2")
+        self.root.title("Wong Instruments             MIA - Portal             Ver 5.0")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
@@ -36,129 +37,41 @@ class MiaGui:
         self.despliega_mensaje = False
         self.create_widgets()
         self.supervisa_conexion()
+        self.sorteo.inicia_bascula()
 
 
     def create_widgets(self):
 
-        # Contenedor principal para organizar las áreas de texto y los botones de sorteo de piezas
+        # Contenedor principal main_frame: Cuadro 1 y Cuadro 2
         main_frame = tk.Frame(self.root)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Sub-frame para las áreas de texto
-        text_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, pady=(6, 4))
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Sub-frame para la señal de conexión
-        signal_frame = tk.Frame(text_frame)
-        signal_frame.pack(side=tk.TOP, anchor=tk.NW, padx=20, pady=(20, 40))
-        
-        # Etiqueta para la señal de conexión
-        tk.Label(signal_frame, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
-        # Lienzo para dibujar la sennal de conexión (superior izquierda)
-        self.signal_canvas = tk.Canvas(signal_frame, width=20, height=20, bg=main_frame.cget("bg"), highlightthickness=0)
-        self.signal_canvas.pack(side=tk.LEFT)
-        self.signal_circle = self.signal_canvas.create_oval(2, 2, 18, 18, fill="gray", outline="")  # Círculo inicial (apagado)
-        self.signal_circle = self.signal_canvas.create_oval(4, 4, 16, 16, fill="gray", outline="")  # Círculo inicial (apagado)
-
-        # Etiqueta y campo para URL de conexión (a la derecha del círculo)
-        self.url_label = tk.Label(signal_frame, text="URL:", font=("DejaVu Sans Mono", 12))
-        self.url_label.pack(side=tk.LEFT, padx=(15, 2))
-        
-        # Menú con opciones de URL
-        self.url_menu = ttk.Combobox(signal_frame, textvariable=self.url_var, font=("Arial", 14), width=30, state="readonly")
-        self.url_menu['values'] = ["ws://192.168.100.25:3000/cable", "ws://shielded-taiga-04156.herokuapp.com/cable"]
-        self.url_menu.current(0)  # Selecciona la primera opción por defecto
-        self.url_menu.pack(side=tk.RIGHT, padx=5)
-        # self.url_entry = tk.Entry(signal_frame, font=("DejaVu Sans Mono", 12), width=35)
-        # self.url_entry.pack(side=tk.LEFT, padx=(0, 10))
-        # self.url_entry.insert(0,self.websocket_mia.url)  # Valor por defecto
-
-        # Título y área de TX
-        tk.Label(text_frame, text="Tx al servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
-        self.text_area_tx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=45, height=5, font=("DejaVu Sans Mono", 11))
-        self.text_area_tx.pack(pady=(0, 10), padx=(10, 10))
-        # Agrega margen interno al texto
-        self.text_area_tx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
-        self.text_area_tx.insert("1.0", " ", "margin")  # Aplicar la configuración de margen
-
-        # Título y área de RX
-        tk.Label(text_frame, text="Rx del servidor SysQB", font=("DejaVu Sans Mono", 14)).pack(pady=(0, 5))
-        self.text_area_rx = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, width=45, height=5, font=("DejaVu Sans Mono", 11))
-        self.text_area_rx.pack(pady=(0, 10), padx=(10, 10))
-        # Agrega margen interno al texto
-        self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
-        self.text_area_rx.insert("1.0", " ", "margin")  # Aplicar la configuración de margen
-       
-        # Contenedor para los botones de Desconecta, Conecta y No. de Mesa (movido aquí desde abajo)
-        button_frame = tk.Frame(text_frame)
-        button_frame.pack(fill=tk.X, pady=30, padx=(5, 5))
-
-        # Botón Desconecta a la extrema izquierda (columna 0)
-        style = ttk.Style()
-        style.configure("Red.TButton", foreground="gray", font=("DejaVu Sans Mono", 14))
-        self.disconnect_button = tk.Button(button_frame, text="DESCONECTA", command=self.desconecta_sysqb, relief=tk.RAISED,
-            bd=4,
-            height=2,
-            width=12,
-            font=("Arial", 14),
-            bg="#e0e0e0",
-            fg="black",
-            activebackground="#cccccc",
-            activeforeground="black")
-        self.disconnect_button.grid(row=0, column=0, padx=10, pady=5, sticky="e")
-
-        # Etiqueta, cajita y contador para "Mesa No." (columna 1)
-        mesa_container = tk.Frame(button_frame)
-        mesa_container.grid(row=0, column=1, padx=10, pady=5)
-        self.mesa_label = tk.Label(mesa_container, text="Mesa No.", font=("Arial", 14))
-        self.mesa_label.pack(side=tk.LEFT, padx=5)
-        
-        # Menú con opciones de mesa de 1 a 16 
-        self.mesa_var = tk.StringVar(value="1")
-        self.mesa_menu = ttk.Combobox(mesa_container, textvariable=self.mesa_var, font=("Arial", 14), width=4, state="readonly")
-        self.mesa_menu['values'] = [str(i) for i in range(1, 17)]
-        self.mesa_menu.current(0)  # Selecciona la primera opción por defecto
-        self.mesa_menu.pack(side=tk.RIGHT, padx=5)
-        # self.mesa_entry = tk.Entry(mesa_container, font=("Arial", 14), width=4)
-        # self.mesa_entry.pack(side=tk.RIGHT, padx=5)
-        # self.mesa_entry.insert(0, " 1")  # Establecer el valor predeterminado a 1
-
-        # Botón Conecta a la extrema derecha (columna 2)
-        style.configure("Green.TButton", foreground="#1094F9", font=("DejaVu Sans Mono", 14))
-        self.connect_button = tk.Button(button_frame, text="CONECTA", command=self.conecta_sysqb, relief=tk.RAISED,
-            bd=4,
-            height=2,
-            width=10,
-            font=("Arial", 14),
-            bg="#e0e0e0",
-            fg="black",
-            activebackground="#cccccc",
-            activeforeground="black")                             
-        self.connect_button.grid(row=0, column=2, padx=10, pady=5, sticky="e")
-
-        # Función de respuesta (callback) para el tacto de las cajitas de sorteo
-        def make_incrementa_callback(idx):
-            return lambda event: self.sorteo.incrementa_contador(idx)
-        # Función de respuesta (callback) para el tacto de los botones de tipo de incidente asociados a NG-MIX
-        def make_circulo_boton_callback(idx):
-            return lambda event: self.circulo_boton_callback(idx)
-
-        # Sub-frame para el despliegue de las cajitas y botoneras de sorteo (OK, NG-nn)
+        #######################################################################
+        #
+        #   Cuadro 1 (variable_frame): Pieza No, cajas de sorteo OK/NG y Báscula
+        #
+        # #####################################################################
         variable_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        variable_frame.pack(side=tk.RIGHT, fill=tk.Y, pady=(6, 4), padx=10)
+        variable_frame.config(width=350)  # Ancho fijo en píxeles
+        variable_frame.pack_propagate(False)  # No ajustar al contenido
+        variable_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(6, 4), padx=(10,10))
 
-        # Etiqueta, cajita y contador para "PIEZA"
+        #
+        # Sub-frame pieza_container: PIEZA No.
+        #
         pieza_container = tk.Frame(variable_frame)
         pieza_container.pack(pady=5, fill=tk.X)
         self.pieza_label = tk.Label(pieza_container, text="PIEZA No.", font=("Arial", 16))
-        self.pieza_label.pack(side=tk.LEFT, padx=5)
+        self.pieza_label.pack(side=tk.LEFT, padx=(10,10))
         self.pieza_entry = tk.Entry(pieza_container, font=("Arial", 24), width=8)
-        self.pieza_entry.pack(side=tk.RIGHT, padx=5)
+        self.pieza_entry.pack(side=tk.LEFT, padx=5)
+        self.pieza_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>10}")
-
-        # Checkboxes para multiplicadores X1, X10 y X100
+        #
+        # Sub-frame multiplicador_frame: Checkboxes X1, X10 y X100
+        #
         multiplicador_frame = tk.Frame(variable_frame)
-        multiplicador_frame.pack(pady=(0, 5), fill=tk.X)
+        multiplicador_frame.pack(padx=(60, 60), pady=(10, 5), fill=tk.X)
         self.multiplicador_var = tk.IntVar(value=1)
 
         radio_x1 = tk.Radiobutton(multiplicador_frame, text="x1", variable=self.multiplicador_var, value=1, font=("Arial", 16))
@@ -175,17 +88,24 @@ class MiaGui:
             self.multiplicador_valor = self.multiplicador_var.get()
         self.multiplicador_var.trace_add("write", lambda *args: actualiza_multiplicador())
 
-        # Etiqueta, cajita y contador para "Piezas OK"
+        # Función de respuesta (callback) para el tacto de las cajitas de sorteo
+        def make_incrementa_callback(idx):
+            return lambda event: self.sorteo.incrementa_contador(idx)
+        
+        #
+        # pza_ok_container: Etiqueta, cajita y contador para "Piezas OK"
+        #
         pza_ok_container = tk.Frame(variable_frame)
-        pza_ok_container.pack(pady=10, fill=tk.X)
-        self.pza_ok_label = tk.Label(pza_ok_container, text="Piezas OK", font=("Arial", 14))
+        pza_ok_container.pack(padx=(30,30), pady=(15,5), fill=tk.X)
+        self.pza_ok_label = tk.Label(pza_ok_container, text="Piezas OK", font=("Arial", 18))
         self.pza_ok_label.pack(side=tk.LEFT, padx=5)
-        self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 16), width=8)
+        self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 22), width=8)
         self.pza_ok_entry.pack(side=tk.RIGHT, padx=5)
-        ok_btn = tk.Canvas(pza_ok_container, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
+        self.pza_ok_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        ok_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ok_btn.pack(side=tk.RIGHT, padx=5)
-        rect_ok_1 = ok_btn.create_rectangle(0, 0, 28, 28, fill="#7CBB00", outline="")
-        rect_ok_2 = ok_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
+        rect_ok_1 = ok_btn.create_rectangle(0, 0, 36, 36, fill="#7CBB00", outline="")
+        rect_ok_2 = ok_btn.create_rectangle(4, 4, 32, 32, fill="white", outline="")
         ok_btn.bind("<Button-1>", make_incrementa_callback(0))
         
         # Crea el efecto "Hover" para la cajita de "Piezas OK"
@@ -196,167 +116,237 @@ class MiaGui:
         ok_btn.bind("<Enter>", on_ok_hover)
         ok_btn.bind("<Leave>", on_ok_leave)
 
-        # Etiqueta, cajita y contador para "Piezas NG-1"
-        pza_ng_container = tk.Frame(variable_frame)
-        pza_ng_container.pack(pady=5, fill=tk.X)
-        self.pza_ng_label = tk.Label(pza_ng_container, text="Piezas NG-1", font=("Arial", 14))
-        self.pza_ng_label.pack(side=tk.LEFT, padx=5)
-        self.pza_ng_entry = tk.Entry(pza_ng_container, font=("Arial", 16), width=8)
-        self.pza_ng_entry.pack(side=tk.RIGHT, padx=5)
-        ng1_btn = tk.Canvas(pza_ng_container, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-        ng1_btn.pack(side=tk.RIGHT, padx=5)
-        ng1_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
-        rect_ng1 = ng1_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
-        ng1_btn.bind("<Button-1>", make_incrementa_callback(1))
-        
-        # Crea el efecto "Hover" para la cajita de "Piezas NG-1"
-        def on_ng1_hover(event):
-            ng1_btn.itemconfig(rect_ng1, fill="#FB9D78")  # Rojo más claro al pasar el ratón
-        def on_ng1_leave(event): 
-            ng1_btn.itemconfig(rect_ng1, fill="white")  # Color original al salir 
-        ng1_btn.bind("<Enter>", on_ng1_hover)
-        ng1_btn.bind("<Leave>", on_ng1_leave)
-        
-        # Etiqueta, cajita y contador para "Piezas NG-2"
-        pza_ng_container_2 = tk.Frame(variable_frame)
-        pza_ng_container_2.pack(pady=5, fill=tk.X)
-        self.pza_ng_label_2 = tk.Label(pza_ng_container_2, text="Piezas NG-2", font=("Arial", 14))
-        self.pza_ng_label_2.pack(side=tk.LEFT, padx=5)
-        self.pza_ng_entry_2 = tk.Entry(pza_ng_container_2, font=("Arial", 16), width=8)
-        self.pza_ng_entry_2.pack(side=tk.RIGHT, padx=5)
-        ng2_btn = tk.Canvas(pza_ng_container_2, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-        ng2_btn.pack(side=tk.RIGHT, padx=5)
-        ng2_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
-        rect_ng2 = ng2_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
-        ng2_btn.bind("<Button-1>", make_incrementa_callback(2))
-        
-        # Crea el efecto "Hover" para la cajita de "Piezas NG-2"
-        def on_ng2_hover(event):
-            ng2_btn.itemconfig(rect_ng2, fill="#FB9D78")  # Rojo más claro al pasar el mouse
-        def on_ng2_leave(event): 
-            ng2_btn.itemconfig(rect_ng2, fill="white")  # Color original al salir
-        ng2_btn.bind("<Enter>", on_ng2_hover)
-        ng2_btn.bind("<Leave>", on_ng2_leave)
-        
-        # Etiqueta, cajita y contador para "Piezas NG-3"
-        pza_ng_container_3 = tk.Frame(variable_frame)
-        pza_ng_container_3.pack(pady=5, fill=tk.X)
-        self.pza_ng_label_3 = tk.Label(pza_ng_container_3, text="Piezas NG-3", font=("Arial", 14))
-        self.pza_ng_label_3.pack(side=tk.LEFT, padx=5)
-        self.pza_ng_entry_3 = tk.Entry(pza_ng_container_3, font=("Arial", 16), width=8)
-        self.pza_ng_entry_3.pack(side=tk.RIGHT, padx=5)
-        ng3_btn = tk.Canvas(pza_ng_container_3, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-        ng3_btn.pack(side=tk.RIGHT, padx=5)
-        ng3_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
-        rect_ng3 = ng3_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
-        ng3_btn.bind("<Button-1>", make_incrementa_callback(3))
-        
-        # Crea el efecto "Hover" para la cajita de "Piezas NG-3"
-        def on_ng3_hover(event):
-            ng3_btn.itemconfig(rect_ng3, fill="#FB9D78")  # Rojo más claro al pasar el ratón
-        def on_ng3_leave(event): 
-            ng3_btn.itemconfig(rect_ng3, fill="white")  # Color original al salir 
-        ng3_btn.bind("<Enter>", on_ng3_hover)
-        ng3_btn.bind("<Leave>", on_ng3_leave)
-        
-        # Etiqueta, cajita y contador para "Piezas NG-4"
-        pza_ng_container_4 = tk.Frame(variable_frame)
-        pza_ng_container_4.pack(pady=5, fill=tk.X)
-        self.pza_ng_label_4 = tk.Label(pza_ng_container_4, text="Piezas NG-4", font=("Arial", 14))
-        self.pza_ng_label_4.pack(side=tk.LEFT, padx=5)
-        self.pza_ng_entry_4 = tk.Entry(pza_ng_container_4, font=("Arial", 16), width=8)
-        self.pza_ng_entry_4.pack(side=tk.RIGHT, padx=5)
-        ng4_btn = tk.Canvas(pza_ng_container_4, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-        ng4_btn.pack(side=tk.RIGHT, padx=5)
-        ng4_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
-        rect_ng4 = ng4_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
-        ng4_btn.bind("<Button-1>", make_incrementa_callback(4))
-        
-        # Crea el efecto "Hover" para la cajita de "Piezas NG-4"
-        def on_ng4_hover(event):
-            ng4_btn.itemconfig(rect_ng4, fill="#FB9D78")  # Rojo más claro al pasar el ratón
-        def on_ng4_leave(event): 
-            ng4_btn.itemconfig(rect_ng4, fill="white")  # Color original al salir
-        ng4_btn.bind("<Enter>", on_ng4_hover)
-        ng4_btn.bind("<Leave>", on_ng4_leave)
-        
-        # Etiqueta, cajita y contador para "Piezas NG-5"
-        pza_ng_container_5 = tk.Frame(variable_frame)
-        pza_ng_container_5.pack(pady=5, fill=tk.X)
-        self.pza_ng_label_5 = tk.Label(pza_ng_container_5, text="Piezas NG-5", font=("Arial", 14))
-        self.pza_ng_label_5.pack(side=tk.LEFT, padx=5)
-        self.pza_ng_entry_5 = tk.Entry(pza_ng_container_5, font=("Arial", 16), width=8)
-        self.pza_ng_entry_5.pack(side=tk.RIGHT, padx=5)
-        ng5_btn = tk.Canvas(pza_ng_container_5, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-        ng5_btn.pack(side=tk.RIGHT, padx=5)
-        ng5_btn.create_rectangle(0, 0, 28, 28, fill="#F65314", outline="")
-        rect_ng5 = ng5_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
-        ng5_btn.bind("<Button-1>", make_incrementa_callback(5))
-        
-        # Crea el efecto "Hover" para la cajita de "Piezas NG-5"
-        def on_ng5_hover(event):
-            ng5_btn.itemconfig(rect_ng5, fill="#FB9D78")  # Rojo más claro al pasar el ratón
-        def on_ng5_leave(event): 
-            ng5_btn.itemconfig(rect_ng5, fill="white")  # Color original al salir
-        ng5_btn.bind("<Enter>", on_ng5_hover)
-        ng5_btn.bind("<Leave>", on_ng5_leave)
-        
-        # Etiqueta, cajita y contador para "Piezas NG-MIX"
+        #
+        # pza_ng_container_mix: Etiqueta, cajita y contador para "Piezas NG-MIX"
+        #
         pza_ng_container_mix = tk.Frame(variable_frame)
-        pza_ng_container_mix.pack(pady=20, fill=tk.X)
-        self.pza_ng_label_mix = tk.Label(pza_ng_container_mix, text="Piezas NG-MIX", font=("Arial", 14))
+        pza_ng_container_mix.pack(padx=(30,30), pady=(10, 20), fill=tk.X)
+        self.pza_ng_label_mix = tk.Label(pza_ng_container_mix, text="Piezas NG", font=("Arial", 18))
         self.pza_ng_label_mix.pack(side=tk.LEFT, padx=5)
-        self.pza_ng_entry_mix = tk.Entry(pza_ng_container_mix, font=("Arial", 16), width=8)
+        self.pza_ng_entry_mix = tk.Entry(pza_ng_container_mix, font=("Arial", 22), width=8)
         self.pza_ng_entry_mix.pack(side=tk.RIGHT, padx=5)
-        ngmix_btn = tk.Canvas(pza_ng_container_mix, width=28, height=28, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
+        self.pza_ng_entry_mix.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        ngmix_btn = tk.Canvas(pza_ng_container_mix, width=36, height=36, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ngmix_btn.pack(side=tk.RIGHT, padx=5)
-        ngmix_btn.create_rectangle(0, 0, 28, 28, fill="#BB10F9", outline="")
-        rect_ngmix = ngmix_btn.create_rectangle(4, 4, 24, 24, fill="white", outline="")
-        ngmix_btn.bind("<Button-1>", make_incrementa_callback(6))
+        ngmix_btn.create_rectangle(0, 0, 36, 36, fill="#FA0505", outline="")
+        rect_ngmix = ngmix_btn.create_rectangle(4, 4, 32, 32, fill="white", outline="")
+        ngmix_btn.bind("<Button-1>", make_incrementa_callback(1))
         
         # Crea el efecto "Hover" para la cajita de "Piezas NG-MIX"
         def on_ngmix_hover(event):
-            ngmix_btn.itemconfig(rect_ngmix, fill="#DA78FB")  # Violeta más claro al pasar el mouse
+            ngmix_btn.itemconfig(rect_ngmix, fill="#FA8585")  # Rojo más claro al pasar el mouse
         def on_ngmix_leave(event): 
             ngmix_btn.itemconfig(rect_ngmix, fill="white")  # Color original al salir
         ngmix_btn.bind("<Enter>", on_ngmix_hover)
         ngmix_btn.bind("<Leave>", on_ngmix_leave)
 
-        # Sub-frame para los lienzos donde dibujar los focos indicadores de incidentes múltiples 
-        self.focos_lienzos = []
-        self.focos_dibujos = []
-        circulos_frame = tk.Frame(variable_frame)
-        circulos_frame.pack(pady=(10, 0))
+        # Renglón de selección múltiple: Conteo por IR o Conteo por Peso (Checkbuttons)
+        self.tipo_conteo_ir = tk.IntVar(value=0)
+        self.tipo_conteo_peso = tk.IntVar(value=0)
+        tipo_conteo_row = tk.Frame(variable_frame)
+        tipo_conteo_row.pack(side=tk.TOP, pady=(20,0), anchor="center")
+        tk.Checkbutton(tipo_conteo_row, text="IR", variable=self.tipo_conteo_ir, onvalue=1, offvalue=0, font=("Arial", 16)).pack(side=tk.LEFT, padx=30)
+        tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=2, offvalue=0, font=("Arial", 16)).pack(side=tk.LEFT, padx=30)
 
-        for i in range(5):
-            canvas = tk.Canvas(circulos_frame, width=24, height=24, bg=main_frame.cget("bg"), highlightthickness=0)
-            canvas.pack(side=tk.LEFT, padx=7)
-            # Primer óvalo (amarillo, borde exterior)
-            circulo_ext = canvas.create_oval(2, 2, 22, 22, fill="gray", outline="")
-            # Segundo óvalo (gris, interior)
-            circulo_interior = canvas.create_oval(6, 6, 20, 20, fill="gray", outline="")
-            self.focos_lienzos.append(canvas)
-            self.focos_dibujos.append((circulo_ext, circulo_interior))
+        # Separadores horizontales tipo GROOVE antes del peso_container
+        separador1 = tk.Frame(variable_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
+        separador1.pack(fill=tk.X, padx=(5,5), pady=(5, 2))
+        separador2 = tk.Frame(variable_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
+        separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 5))
+
+        # Sub-frame peso_container: 
+        self.peso_container = tk.Frame(variable_frame)
+        self.peso_container.pack(padx=(2,2), pady=(10,10), fill=tk.X)
+        tk.Label(self.peso_container, text="CONTEO POR PESO (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
         
-        # Sub-frame para los lienzos donde dibujar los botones que seleccionan incidentes múltiples
-        self.boton_circular_dibujos = []
-        self.boton_circular_lienzos = []
-        circulos_botones_frame = tk.Frame(variable_frame)
-        circulos_botones_frame.pack(pady=(0, 10))
+        # Peso último y actual
+        peso_row = tk.Frame(self.peso_container)
+        peso_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(20,10))
+        self.peso_ultimo_label = tk.Label(peso_row, text="Peso Anterior:", font=("Arial", 14))
+        self.peso_ultimo_label.pack(side=tk.LEFT, padx=5)
+        self.peso_ultimo_entry = tk.Entry(peso_row, font=("Arial", 14), width=6)
+        self.peso_ultimo_entry.pack(side=tk.LEFT, padx=2)
+        self.peso_ultimo_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        self.peso_actual_label = tk.Label(peso_row, text="Peso Actual:", font=("Arial", 14))
+        self.peso_actual_label.pack(side=tk.LEFT, padx=10)
+        self.peso_actual_entry = tk.Entry(peso_row, font=("Arial", 14), width=6)
+        self.peso_actual_entry.pack(side=tk.LEFT, padx=2)
+        self.peso_actual_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+       
+        pieza_final_container = tk.Frame(self.peso_container)
+        pieza_final_container.pack(pady=(10, 10), fill=tk.X, anchor='n')
+        self.pieza_final_label = tk.Label(pieza_final_container, text="PZA REGISTRADA", font=("Arial", 16))
+        self.pieza_final_label.pack(side=tk.LEFT, padx=(10,0))
+        self.pieza_final_peso_entry = tk.Entry(pieza_final_container, font=("Arial", 24), width=6)
+        self.pieza_final_peso_entry.pack(side=tk.LEFT, padx=5)
+        self.pieza_final_peso_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        self.pieza_final_peso_entry.insert(0, f"{self.sorteo.pieza_numero-1:>8}")
+        self.pieza_final_label_2 = tk.Label(pieza_final_container, text="Gramos", font=("Arial", 14))
+        self.pieza_final_label_2.pack(side=tk.LEFT, padx=(10,0))
+        # self.pieza_final_peso_entry = tk.Entry(pieza_final_container, font=("Arial", 14), width=6)
+        # self.pieza_final_peso_entry.pack(side=tk.LEFT, padx=5)
+        # self.pieza_final_peso_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        # self.pieza_final_peso_entry.insert(0, f"{self.sorteo.pieza_numero-1:>6}")
+        
+        #######################################################################
+        #
+        #   Cuadro 2 (text_frame):  Señal de conexión, mensajes Tx/Rx y botones CONECTA/DESCONECTA
+        #
+        #######################################################################
+        text_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
+        text_frame.pack(side=tk.RIGHT, fill=tk.Y, expand=False, pady=(6, 4), padx=(20, 10))
 
-        for i in range(5):
-            canvas_btn = tk.Canvas(circulos_botones_frame, width=24, height=24, bg=main_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-            canvas_btn.pack(side=tk.LEFT, padx=7)
-            # Círculo exterior (azul claro)
-            circulo_ext = canvas_btn.create_oval(2, 2, 22, 22, fill="#1094F9", outline="")
-            # Círculo interior (blanco)
-            circulo_interior = canvas_btn.create_oval(6, 6, 18, 18, fill="white", outline="")
-            canvas_btn.bind("<Button-1>", make_circulo_boton_callback(i))
-            self.boton_circular_dibujos.append((circulo_ext, circulo_interior))
-            self.boton_circular_lienzos.append(canvas_btn)
+        #
+        # Sub-frame bascula_container: 
+        #
+        self.bascula_container = tk.Frame(text_frame, relief=tk.GROOVE, borderwidth=2)
+        self.bascula_container.pack(padx=(2,2), pady=(2,2), fill=tk.X)
+        # Título centrado para el frame de báscula
+        tk.Label(self.bascula_container, text="PESO / PIEZA  (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
 
+        # Peso 1
+        peso_1_row = tk.Frame(self.bascula_container)
+        peso_1_row.pack(side=tk.TOP, anchor="w", fill=tk.X)
+        self.peso_1_label = tk.Label(peso_1_row, text="Muestra 1", font=("Arial", 14))
+        self.peso_1_label.pack(side=tk.LEFT, padx=5)
+        self.peso_1_entry = tk.Entry(peso_1_row, font=("Arial", 14), width=5)
+        self.peso_1_entry.pack(side=tk.LEFT, padx=5)
+        self.peso_1_btn = tk.Button(peso_1_row, text="Registra", font=("Arial", 14), command=self.lee_peso_1)
+        self.peso_1_btn.pack(side=tk.LEFT, padx=5)
 
-    # Tarea periódica para supervisar el estado de conexión
+        # Peso 2
+        peso_2_row = tk.Frame(self.bascula_container)
+        peso_2_row.pack(side=tk.TOP, anchor="w", fill=tk.X)
+        self.peso_2_label = tk.Label(peso_2_row, text="Muestra 2", font=("Arial", 14))
+        self.peso_2_label.pack(side=tk.LEFT, padx=5)
+        self.peso_2_entry = tk.Entry(peso_2_row, font=("Arial", 14), width=5)
+        self.peso_2_entry.pack(side=tk.LEFT, padx=5)
+        self.peso_2_btn = tk.Button(peso_2_row, text="Registra", font=("Arial", 14), command=self.lee_peso_2)
+        self.peso_2_btn.pack(side=tk.LEFT, padx=5)
+
+        # Peso 3
+        peso_3_row = tk.Frame(self.bascula_container)
+        peso_3_row.pack(side=tk.TOP, anchor="w", fill=tk.X)
+        self.peso_3_label = tk.Label(peso_3_row, text="Muestra 3", font=("Arial", 14))
+        self.peso_3_label.pack(side=tk.LEFT, padx=5)
+        self.peso_3_entry = tk.Entry(peso_3_row, font=("Arial", 14), width=5)
+        self.peso_3_entry.pack(side=tk.LEFT, padx=5)
+        self.peso_3_btn = tk.Button(peso_3_row, text="Registra", font=("Arial", 14), command=self.lee_peso_3)
+        self.peso_3_btn.pack(side=tk.LEFT, padx=5)
+
+        # Remueve la selección activa y el enfoque al cambiar el valor del Combobox
+        def limpia_enfoque_combobox(event):
+            self.root.after(100, lambda: event.widget.selection_clear())
+            self.root.after(150, lambda: self.root.focus_force())
+
+        # Renglón de Tolerancia
+        tolerancia_row = tk.Frame(self.bascula_container)
+        tolerancia_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(10,15))
+        self.peso_promedio_label = tk.Label(tolerancia_row, text="Peso Prom", font=("Arial", 14))
+        self.peso_promedio_label.pack(side=tk.LEFT, padx=5)
+        self.peso_promedio_entry = tk.Entry(tolerancia_row, font=("Arial", 14), width=5)
+        self.peso_promedio_entry.pack(side=tk.LEFT, padx=0)
+        #
+        self.tolerancia_label = tk.Label(tolerancia_row, text="Tolerancia (%)", font=("Arial", 14))
+        self.tolerancia_label.pack(side=tk.LEFT, padx=(15,0))
+        self.tolerancia_var = tk.StringVar(value="15")  # Valor por omisión 15%
+        self.tolerancia_menu = ttk.Combobox(tolerancia_row, textvariable=self.tolerancia_var, font=("Arial", 14), width=3, state="readonly")
+        self.tolerancia_menu['values'] = ["2", "5", "10", "15", "20", "30", "50"]
+        self.tolerancia_menu.current(3)  # Selecciona el valor por omisión (10%)
+        self.tolerancia_menu.pack(side=tk.LEFT, padx=0)
+        self.tolerancia_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
+        #
+        # Sub-frame comunica_container: 
+        #
+        self.comunica_container = tk.Frame(text_frame, relief=tk.GROOVE, borderwidth=2)
+        self.comunica_container.pack(padx=(2,2), pady=(20,2), fill=tk.X)
+        # Título centrado para el área de comunicaiones
+        tk.Label(self.comunica_container, text="WEBSOCKET", font=("Arial", 14, "bold")).pack(pady=(5,5), anchor="center")
+        
+        # Sub-frame para la señal de conexión y URL (en una sola línea)
+        signal_row = tk.Frame(self.comunica_container)
+        signal_row.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(10, 10))
+
+        #tk.Label(signal_row, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
+        self.signal_canvas = tk.Canvas(signal_row, width=20, height=20, bg=text_frame.cget("bg"), highlightthickness=0)
+        self.signal_canvas.pack(side=tk.LEFT, padx=(0, 10))
+        self.signal_circle = self.signal_canvas.create_oval(2, 2, 18, 18, fill="gray", outline="")
+        self.signal_circle = self.signal_canvas.create_oval(4, 4, 16, 16, fill="gray", outline="")
+
+        self.url_label = tk.Label(signal_row, text="URL:", font=("DejaVu Sans Mono", 12))
+        self.url_label.pack(side=tk.LEFT, padx=(0, 5))
+        self.url_menu = ttk.Combobox(signal_row, textvariable=self.url_var, font=("Arial", 12), width=30, state="readonly")
+        self.url_menu['values'] = ["ws://192.168.100.25:3000/cable", "ws://shielded-taiga-04156.herokuapp.com/cable"]
+        self.url_menu.current(0)
+        self.url_menu.pack(side=tk.LEFT)
+
+        # Línea de Tx
+        tx_row = tk.Frame(self.comunica_container)
+        tx_row.pack(fill=tk.X, padx=5, pady=(10, 10))
+        tk.Label(tx_row, text="Tx", font=("DejaVu Sans Mono", 14)).pack(side=tk.LEFT, anchor="n", padx=(0, 5))
+        self.text_area_tx = scrolledtext.ScrolledText(tx_row, wrap=tk.WORD, width=25, height=3, font=("DejaVu Sans Mono", 11))
+        self.text_area_tx.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.text_area_tx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
+        self.text_area_tx.insert("1.0", " ", "margin")
+
+        # Línea de Rx
+        rx_row = tk.Frame(self.comunica_container)
+        rx_row.pack(fill=tk.X, padx=5, pady=(5, 10))
+        tk.Label(rx_row, text="Rx", font=("DejaVu Sans Mono", 14)).pack(side=tk.LEFT, anchor="n", padx=(0, 5))
+        self.text_area_rx = scrolledtext.ScrolledText(rx_row, wrap=tk.WORD, width=25, height=3, font=("DejaVu Sans Mono", 11))
+        self.text_area_rx.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
+        self.text_area_rx.insert("1.0", " ", "margin")
+        #
+        # Contenedor para los botones de Desconecta, Mesa y Conecta en un solo renglón
+        #
+        button_row = tk.Frame(self.comunica_container)
+        button_row.pack(pady=(10,10))
+        button_row.columnconfigure(0, weight=1)
+        button_row.columnconfigure(1, weight=1)
+        button_row.columnconfigure(2, weight=1)
+
+        # Botón DESCONECTA
+        style = ttk.Style()
+        style.configure("Red.TButton", foreground="gray", font=("DejaVu Sans Mono", 12))
+        self.disconnect_button = tk.Button(button_row, text="DESC", command=self.desconecta_sysqb, relief=tk.RAISED,
+            bd=4,
+            height=2,
+            width=6,
+            font=("Arial", 12),
+            bg="#e0e0e0",
+            fg="black",
+            activebackground="#cccccc",
+            activeforeground="black")
+        self.disconnect_button.grid(row=0, column=0, padx=5, sticky="nsew")
+
+        # Selector de mesa
+        mesa_container = tk.Frame(button_row)
+        mesa_container.grid(row=0, column=1, padx=5, sticky="nsew")
+        self.mesa_label = tk.Label(mesa_container, text="MIA", font=("Arial", 18, "bold"))
+        self.mesa_label.pack(side=tk.LEFT, padx=5)
+        self.mesa_var = tk.StringVar(value="1")
+        self.mesa_menu = ttk.Combobox(mesa_container, textvariable=self.mesa_var, font=("Arial", 18), width=3, state="readonly")
+        self.mesa_menu['values'] = [str(i) for i in range(1, 17)]
+        self.mesa_menu.current(0)
+        self.mesa_menu.pack(side=tk.LEFT, padx=0)
+        self.mesa_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
+        
+
+        # Botón CONECTA
+        style.configure("Green.TButton", foreground="#1094F9", font=("DejaVu Sans Mono", 12))
+        self.connect_button = tk.Button(button_row, text="CONEC", command=self.conecta_sysqb, relief=tk.RAISED,
+            bd=4,
+            height=2,
+            width=6,
+            font=("Arial", 12),
+            bg="#e0e0e0",
+            fg="black",
+            activebackground="#cccccc",
+            activeforeground="black")
+        self.connect_button.grid(row=0, column=2, padx=5, sticky="nsew")
+
+    # Tarea periódica para supervisar el estado de la conexión
     def supervisa_conexion(self):
         
         if not self.conectado or not self.wifi_activo():
@@ -391,11 +381,11 @@ class MiaGui:
     def actualiza_cajitas(self, pieza_numero, idx):
         entrys = [
             self.pza_ok_entry,
-            self.pza_ng_entry,
-            self.pza_ng_entry_2,
-            self.pza_ng_entry_3,
-            self.pza_ng_entry_4,
-            self.pza_ng_entry_5,
+            # self.pza_ng_entry,
+            # self.pza_ng_entry_2,
+            # self.pza_ng_entry_3,
+            # self.pza_ng_entry_4,
+            # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
         self.pieza_entry.insert(0, f"{pieza_numero:>10}")
@@ -444,11 +434,11 @@ class MiaGui:
     def limpia_cajitas(self):  
         entrys = [
             self.pza_ok_entry,
-            self.pza_ng_entry,
-            self.pza_ng_entry_2,
-            self.pza_ng_entry_3,
-            self.pza_ng_entry_4,
-            self.pza_ng_entry_5,
+            # self.pza_ng_entry,
+            # self.pza_ng_entry_2,
+            # self.pza_ng_entry_3,
+            # self.pza_ng_entry_4,
+            # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>10}")
@@ -501,6 +491,67 @@ class MiaGui:
         # Cambia el color del círculo a gris (apagado)
         self.signal_canvas.itemconfig(self.signal_circle, fill="gray")
 
+    def lee_peso_1(self):
+        valor = self.sorteo.lee_bascula_ok()
+        self.peso_1_entry.delete(0, tk.END)
+        self.peso_1_entry.insert(0, str(valor))
+        self.actualiza_promedio_peso()
+
+    def lee_peso_2(self):
+        valor = self.sorteo.lee_bascula_ok()
+        self.peso_2_entry.delete(0, tk.END)
+        self.peso_2_entry.insert(0, str(valor))
+        self.actualiza_promedio_peso()
+
+    def lee_peso_3(self):
+        valor = self.sorteo.lee_bascula_ok()
+        self.peso_3_entry.delete(0, tk.END)
+        self.peso_3_entry.insert(0, str(valor))
+        self.actualiza_promedio_peso()
+
+    def actualiza_promedio_peso(self):
+        try:
+            pesos = [
+                float(self.peso_1_entry.get()),
+                float(self.peso_2_entry.get()),
+                float(self.peso_3_entry.get())
+            ]
+            promedio = round(sum(pesos) / 3, 1)
+            self.peso_promedio_entry.delete(0, tk.END)
+            self.peso_promedio_entry.insert(0, str(promedio))
+        except ValueError:
+            pass
+
+    def actualiza_pesos(self, anterior, actual, peso_pieza):
+        self.peso_ultimo_entry.delete(0, tk.END)
+        self.peso_ultimo_entry.insert(0, f"{str(anterior):>8}")
+        self.peso_actual_entry.delete(0, tk.END)
+        self.peso_actual_entry.insert(0, f"{str(actual):>8}")
+        self.pieza_final_peso_entry.delete(0, tk.END)
+        self.pieza_final_peso_entry.insert(0, f"{str(peso_pieza):>8}") 
+
+    def despliega_peso_actual(self, peso_actual):
+        self.peso_actual_entry.delete(0, tk.END)
+        self.peso_actual_entry.insert(0, f"{str(peso_actual):>8}")
+    
+    def limpia_pesos(self):
+        # detener hilo de muestreo
+        self.sorteo.muestreo_activo = False
+        if hasattr(self.sorteo, 'hilo_bascula') and self.sorteo.hilo_bascula.is_alive():
+            self.sorteo.hilo_bascula.join(timeout=1)
+
+        # limpiar entradas
+        for entry in [self.peso_ultimo_entry, self.peso_actual_entry, self.pieza_final_peso_entry]:
+            entry.delete(0, tk.END)
+            entry.insert(0, str(0.0))
+
+        # reiniciar hilo de muestreo
+        self.sorteo.inicia_bascula()
+    
+    def apaga_peso_actual(self):
+        self.peso_actual_entry.delete(0, tk.END)
+        self.peso_actual_entry.insert(0, " "* 6)  # Espacios en blanco para simular apagado
+        
     # Para mantener el bucle de eventos de asyncio en Tkinter y procesar tareas pendientes
     # que fueron creadas con loop.create.task
     def _asyncio_loop(self, loop):

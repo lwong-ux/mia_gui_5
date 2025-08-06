@@ -47,12 +47,14 @@ class ManejadorPortal:
             print("⚠️  No es Raspberry Pi: ManejadorPortal se inicializa sin GPIO.")
 
     def _callback_ok(self, channel):
-        if self._confirma_evento(OK_SENSOR, OK_LED):
-            self.sorteo.incrementa_contador(OK_INDICE)
+        if self.gui.tipo_conteo_var == 1:
+            if self._confirma_evento(OK_SENSOR, OK_LED):
+                self.sorteo.incrementa_contador(OK_INDICE)
 
     def _callback_ng(self, channel):
-        if self._confirma_evento(NG_SENSOR, NG_LED):
-            self.sorteo.incrementa_contador(NG_INDICE)
+        if self.gui.tipo_conteo_var == 1:
+            if self._confirma_evento(NG_SENSOR, NG_LED):
+                self.sorteo.incrementa_contador(NG_INDICE)
 
     def _confirma_evento(self, sensor, led):
         # Prende el LED
