@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import PhotoImage
+import tkinter.font as tkfont
 from PIL import Image, ImageTk  
 from tkinter import scrolledtext
 from mia_websocket import WebSocketMia
@@ -17,7 +18,7 @@ class MiaGui:
         self.root.title("Wong Instruments             MIA - Portal             Ver 5.0")
         
         # Carga y redimensiona la imagen del logo
-        original_logo = Image.open("wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
+        original_logo = Image.open("src/wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
         resized_logo = original_logo.resize((60, 60))  # Cambia el tamaño a 100x100 píxeles
         self.logo = ImageTk.PhotoImage(resized_logo)  # Convertir a un formato compatible con Tkinter
         
@@ -38,6 +39,7 @@ class MiaGui:
         self.create_widgets()
         self.supervisa_conexion()
         self.sorteo.inicia_bascula()
+        self.root.option_add('*TCombobox*Listbox.font', self.mesa_popdown_font)  # Aplica la fuente grande al Combobox de mesa
 
 
     def create_widgets(self):
@@ -52,9 +54,9 @@ class MiaGui:
         #
         # #####################################################################
         variable_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        variable_frame.config(width=350)  # Ancho fijo en píxeles
-        variable_frame.pack_propagate(False)  # No ajustar al contenido
-        variable_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(6, 4), padx=(10,10))
+        #variable_frame.config(width=420)  # Ancho fijo en píxeles
+        variable_frame.pack_propagate(True)  # No ajustar al contenido
+        variable_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(6, 4), padx=(5,5))
 
         #
         # Sub-frame pieza_container: PIEZA No.
@@ -96,7 +98,7 @@ class MiaGui:
         # pza_ok_container: Etiqueta, cajita y contador para "Piezas OK"
         #
         pza_ok_container = tk.Frame(variable_frame)
-        pza_ok_container.pack(padx=(30,30), pady=(15,5), fill=tk.X)
+        pza_ok_container.pack(padx=(50,50), pady=(15,5), fill=tk.X)
         self.pza_ok_label = tk.Label(pza_ok_container, text="Piezas OK", font=("Arial", 18))
         self.pza_ok_label.pack(side=tk.LEFT, padx=5)
         self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 22), width=8)
@@ -120,7 +122,7 @@ class MiaGui:
         # pza_ng_container_mix: Etiqueta, cajita y contador para "Piezas NG-MIX"
         #
         pza_ng_container_mix = tk.Frame(variable_frame)
-        pza_ng_container_mix.pack(padx=(30,30), pady=(10, 20), fill=tk.X)
+        pza_ng_container_mix.pack(padx=(50,50), pady=(10, 20), fill=tk.X)
         self.pza_ng_label_mix = tk.Label(pza_ng_container_mix, text="Piezas NG", font=("Arial", 18))
         self.pza_ng_label_mix.pack(side=tk.LEFT, padx=5)
         self.pza_ng_entry_mix = tk.Entry(pza_ng_container_mix, font=("Arial", 22), width=8)
@@ -156,7 +158,7 @@ class MiaGui:
 
         # Sub-frame peso_container: 
         self.peso_container = tk.Frame(variable_frame)
-        self.peso_container.pack(padx=(2,2), pady=(10,10), fill=tk.X)
+        self.peso_container.pack(padx=(20,20), pady=(10,10), fill=tk.X)
         tk.Label(self.peso_container, text="CONTEO POR PESO (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
         
         # Peso último y actual
@@ -194,20 +196,21 @@ class MiaGui:
         #
         #######################################################################
         text_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        text_frame.pack(side=tk.RIGHT, fill=tk.Y, expand=False, pady=(6, 4), padx=(20, 10))
+        text_frame.pack(side=tk.RIGHT, fill=tk.Y, expand=False, pady=(6, 4), padx=(5, 15))
 
         #
         # Sub-frame bascula_container: 
         #
-        self.bascula_container = tk.Frame(text_frame, relief=tk.GROOVE, borderwidth=2)
-        self.bascula_container.pack(padx=(2,2), pady=(2,2), fill=tk.X)
+        #self.bascula_container = tk.Frame(text_frame, relief=tk.GROOVE, borderwidth=2)
+        self.bascula_container = tk.Frame(text_frame)
+        self.bascula_container.pack(padx=(20,20), pady=(2,2), fill=tk.X)
         # Título centrado para el frame de báscula
         tk.Label(self.bascula_container, text="PESO / PIEZA  (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
 
         # Peso 1
         peso_1_row = tk.Frame(self.bascula_container)
-        peso_1_row.pack(side=tk.TOP, anchor="w", fill=tk.X)
-        self.peso_1_label = tk.Label(peso_1_row, text="Muestra 1", font=("Arial", 14))
+        peso_1_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=4)
+        self.peso_1_label = tk.Label(peso_1_row, text="M1", font=("Arial", 14))
         self.peso_1_label.pack(side=tk.LEFT, padx=5)
         self.peso_1_entry = tk.Entry(peso_1_row, font=("Arial", 14), width=5)
         self.peso_1_entry.pack(side=tk.LEFT, padx=5)
@@ -216,8 +219,8 @@ class MiaGui:
 
         # Peso 2
         peso_2_row = tk.Frame(self.bascula_container)
-        peso_2_row.pack(side=tk.TOP, anchor="w", fill=tk.X)
-        self.peso_2_label = tk.Label(peso_2_row, text="Muestra 2", font=("Arial", 14))
+        peso_2_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=4)
+        self.peso_2_label = tk.Label(peso_2_row, text="M2", font=("Arial", 14))
         self.peso_2_label.pack(side=tk.LEFT, padx=5)
         self.peso_2_entry = tk.Entry(peso_2_row, font=("Arial", 14), width=5)
         self.peso_2_entry.pack(side=tk.LEFT, padx=5)
@@ -226,8 +229,8 @@ class MiaGui:
 
         # Peso 3
         peso_3_row = tk.Frame(self.bascula_container)
-        peso_3_row.pack(side=tk.TOP, anchor="w", fill=tk.X)
-        self.peso_3_label = tk.Label(peso_3_row, text="Muestra 3", font=("Arial", 14))
+        peso_3_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=4)
+        self.peso_3_label = tk.Label(peso_3_row, text="M3", font=("Arial", 14))
         self.peso_3_label.pack(side=tk.LEFT, padx=5)
         self.peso_3_entry = tk.Entry(peso_3_row, font=("Arial", 14), width=5)
         self.peso_3_entry.pack(side=tk.LEFT, padx=5)
@@ -249,19 +252,26 @@ class MiaGui:
         #
         self.tolerancia_label = tk.Label(tolerancia_row, text="Tolerancia (%)", font=("Arial", 14))
         self.tolerancia_label.pack(side=tk.LEFT, padx=(15,0))
-        self.tolerancia_var = tk.StringVar(value="15")  # Valor por omisión 15%
-        self.tolerancia_menu = ttk.Combobox(tolerancia_row, textvariable=self.tolerancia_var, font=("Arial", 14), width=3, state="readonly")
-        self.tolerancia_menu['values'] = ["2", "5", "10", "15", "20", "30", "50"]
+        self.tolerancia_var = tk.StringVar(value="20")  # Valor por omisión 15%
+        self.tolerancia_menu = ttk.Combobox(tolerancia_row, textvariable=self.tolerancia_var, font=("Arial", 16), width=4, state="readonly")
+        self.tolerancia_menu['values'] = ["5", "10", "15", "20", "30", "50"]
         self.tolerancia_menu.current(3)  # Selecciona el valor por omisión (10%)
         self.tolerancia_menu.pack(side=tk.LEFT, padx=0)
         self.tolerancia_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
+        
         #
         # Sub-frame comunica_container: 
         #
-        self.comunica_container = tk.Frame(text_frame, relief=tk.GROOVE, borderwidth=2)
-        self.comunica_container.pack(padx=(2,2), pady=(20,2), fill=tk.X)
+        self.comunica_container = tk.Frame(text_frame)
+        self.comunica_container.pack(padx=(20,20), pady=(5,0), fill=tk.X)
         # Título centrado para el área de comunicaiones
-        tk.Label(self.comunica_container, text="WEBSOCKET", font=("Arial", 14, "bold")).pack(pady=(5,5), anchor="center")
+        #tk.Label(self.comunica_container, text="WEBSOCKET", font=("Arial", 14, "bold")).pack(pady=(5,5), anchor="center")
+        
+        # Separadores horizontales tipo GROOVE antes del peso_container
+        separador1 = tk.Frame(self.comunica_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
+        separador1.pack(fill=tk.X, padx=(5,5), pady=(5, 2))
+        separador2 = tk.Frame(self.comunica_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
+        separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 10))
         
         # Sub-frame para la señal de conexión y URL (en una sola línea)
         signal_row = tk.Frame(self.comunica_container)
@@ -279,29 +289,12 @@ class MiaGui:
         self.url_menu['values'] = ["ws://192.168.100.25:3000/cable", "ws://shielded-taiga-04156.herokuapp.com/cable"]
         self.url_menu.current(0)
         self.url_menu.pack(side=tk.LEFT)
-
-        # Línea de Tx
-        tx_row = tk.Frame(self.comunica_container)
-        tx_row.pack(fill=tk.X, padx=5, pady=(10, 10))
-        tk.Label(tx_row, text="Tx", font=("DejaVu Sans Mono", 14)).pack(side=tk.LEFT, anchor="n", padx=(0, 5))
-        self.text_area_tx = scrolledtext.ScrolledText(tx_row, wrap=tk.WORD, width=25, height=3, font=("DejaVu Sans Mono", 11))
-        self.text_area_tx.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.text_area_tx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
-        self.text_area_tx.insert("1.0", " ", "margin")
-
-        # Línea de Rx
-        rx_row = tk.Frame(self.comunica_container)
-        rx_row.pack(fill=tk.X, padx=5, pady=(5, 10))
-        tk.Label(rx_row, text="Rx", font=("DejaVu Sans Mono", 14)).pack(side=tk.LEFT, anchor="n", padx=(0, 5))
-        self.text_area_rx = scrolledtext.ScrolledText(rx_row, wrap=tk.WORD, width=25, height=3, font=("DejaVu Sans Mono", 11))
-        self.text_area_rx.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
-        self.text_area_rx.insert("1.0", " ", "margin")
+        
         #
         # Contenedor para los botones de Desconecta, Mesa y Conecta en un solo renglón
         #
         button_row = tk.Frame(self.comunica_container)
-        button_row.pack(pady=(10,10))
+        button_row.pack(fill=tk.X, pady=(10, 15))
         button_row.columnconfigure(0, weight=1)
         button_row.columnconfigure(1, weight=1)
         button_row.columnconfigure(2, weight=1)
@@ -311,7 +304,7 @@ class MiaGui:
         style.configure("Red.TButton", foreground="gray", font=("DejaVu Sans Mono", 12))
         self.disconnect_button = tk.Button(button_row, text="DESC", command=self.desconecta_sysqb, relief=tk.RAISED,
             bd=4,
-            height=2,
+            height=1,
             width=6,
             font=("Arial", 12),
             bg="#e0e0e0",
@@ -326,7 +319,70 @@ class MiaGui:
         self.mesa_label = tk.Label(mesa_container, text="MIA", font=("Arial", 18, "bold"))
         self.mesa_label.pack(side=tk.LEFT, padx=5)
         self.mesa_var = tk.StringVar(value="1")
-        self.mesa_menu = ttk.Combobox(mesa_container, textvariable=self.mesa_var, font=("Arial", 18), width=3, state="readonly")
+        
+        # Fuente grande para el popdow (listado)
+        self.mesa_popdown_font = tkfont.Font(family="Arial", size=32)
+        def _ajusta_popdown_mesa():
+            try:
+                # Obtiene la ventana de popdown de este combobox
+                popdown = self.mesa_menu.tk.call("ttk::combobox::PopdownWindow", str(self.mesa_menu))
+                lb_path = popdown + ".f.l"   # Ruta del listbox interno
+                # Aplicar fuente grande a los elementos del dropdown
+                self.mesa_menu.tk.call(lb_path, "configure", "-font", self.mesa_popdown_font)
+                # Limita filas visibles 
+                filas_visibles = min(6, len(self.mesa_menu['values']))
+                try:
+                    self.mesa_menu.configure(height=filas_visibles)
+                except tk.TclError:
+                    pass
+                "Reposiciona el popdown después de que se haya  mapeado"
+                self.root.after(0, lambda: _reposiciona_popdown_mesa(popdown, lb_path))
+            except tk.TclError:
+                pass  # Si no se puede obtener el popdown, no hacer nada
+
+        def _reposiciona_popdown_mesa(popdown, lb_path):
+        # Mide pantalla y coloca el popdown arriba si no cabe abajo.
+            try:
+                # Asegura tamaños actualizados
+                self.root.update_idletasks()
+
+                # Coordenadas del widget y medidas de pantalla
+                x = self.mesa_menu.winfo_rootx()
+                y = self.mesa_menu.winfo_rooty()
+                h_widget = self.mesa_menu.winfo_height()
+                screen_h = self.root.winfo_screenheight()
+
+                # Altura estimada del popdown según filas y métrica de fuente
+                try:
+                    filas = int(self.mesa_menu.cget("height"))
+                except Exception:
+                    filas = 6
+                line_h = self.mesa_popdown_font.metrics("linespace")
+                # Un poco de margen/padding adicional
+                est_pop_h = int(filas * line_h + 16)
+
+                # ¿Cabe abajo?
+                y_abajo = y + h_widget
+                y_arriba = y - est_pop_h
+
+                # Si no cabe abajo, y sí cabe arriba, súbelo
+                if y_abajo + est_pop_h > screen_h and y_arriba >= 0:
+                    # Solo ajustamos posición Y. Conservamos X y ancho actuales.
+                    # Obtenemos geometría actual para preservar ancho
+                    pdw = self.root.nametowidget(popdown)
+                    # fuerza layout
+                    pdw.update_idletasks()
+                    # Solo seteamos +x+y (sin WxH) para no distorsionar tamaño
+                    self.root.tk.call("wm", "geometry", popdown, f"+{x}+{y_arriba}")
+                else:
+                    # Dejarlo abajo (asegura posición estándar)
+                    self.root.tk.call("wm", "geometry", popdown, f"+{x}+{y_abajo}")
+            except Exception:
+                pass
+
+        self.mesa_menu = ttk.Combobox(
+            mesa_container, textvariable=self.mesa_var, font=("Arial", 24), width=3, state="readonly",
+            postcommand=_ajusta_popdown_mesa)
         self.mesa_menu['values'] = [str(i) for i in range(1, 17)]
         self.mesa_menu.current(0)
         self.mesa_menu.pack(side=tk.LEFT, padx=0)
@@ -337,7 +393,7 @@ class MiaGui:
         style.configure("Green.TButton", foreground="#1094F9", font=("DejaVu Sans Mono", 12))
         self.connect_button = tk.Button(button_row, text="CONEC", command=self.conecta_sysqb, relief=tk.RAISED,
             bd=4,
-            height=2,
+            height=1,
             width=6,
             font=("Arial", 12),
             bg="#e0e0e0",
@@ -345,6 +401,25 @@ class MiaGui:
             activebackground="#cccccc",
             activeforeground="black")
         self.connect_button.grid(row=0, column=2, padx=5, sticky="nsew")
+
+        # Línea de Tx
+        tx_row = tk.Frame(self.comunica_container)
+        tx_row.pack(fill=tk.X, padx=(5,5), pady=(15, 10))
+        tk.Label(tx_row, text="Tx", font=("DejaVu Sans Mono", 14)).pack(side=tk.LEFT, anchor="n", padx=(0, 5))
+        self.text_area_tx = scrolledtext.ScrolledText(tx_row, wrap=tk.WORD, width=25, height=3, font=("DejaVu Sans Mono", 11))
+        self.text_area_tx.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.text_area_tx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
+        self.text_area_tx.insert("1.0", " ", "margin")
+#
+        # Línea de Rx
+        rx_row = tk.Frame(self.comunica_container)
+        rx_row.pack(fill=tk.X, padx=(5,5), pady=(5, 10))
+        tk.Label(rx_row, text="Rx", font=("DejaVu Sans Mono", 14)).pack(side=tk.LEFT, anchor="n", padx=(0, 5))
+        self.text_area_rx = scrolledtext.ScrolledText(rx_row, wrap=tk.WORD, width=25, height=3, font=("DejaVu Sans Mono", 11))
+        self.text_area_rx.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
+        self.text_area_rx.insert("1.0", " ", "margin")
+       
 
     # Tarea periódica para supervisar el estado de la conexión
     def supervisa_conexion(self):

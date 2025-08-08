@@ -189,10 +189,13 @@ class ManejadorSorteo:
             return
 
         if self.es_nueva_pieza_por_peso(self.peso_anterior, peso_bascula):
+            self.gui.portal.prende_led_ok()
             self.incrementa_contador(0)
             peso_pieza = round(peso_bascula - self.peso_anterior, 1)
             self.peso_anterior = peso_bascula
             self.gui.actualiza_pesos(self.peso_anterior, peso_bascula, peso_pieza)
+            time.sleep(2.0)
+            self.gui.portal.apaga_led_ok()
 
     def es_nueva_pieza_por_peso(self, anterior, actual):
         try:

@@ -31,6 +31,7 @@ class ManejadorPortal:
 
         if ES_RPI:
             # Configuración de los GPIOs
+            GPIO.cleanup()
             GPIO.setmode(GPIO.BCM)
             GPIO.setup(OK_SENSOR, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.setup(NG_SENSOR, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -39,6 +40,7 @@ class ManejadorPortal:
             GPIO.output(OK_LED, True)
             GPIO.output(NG_LED, True)
             print("🔔 Manejador de portal inicializado, esperando eventos...\n")
+            time.sleep(1)  # Espera un poco para estabilizar los GPIOs
 
             # Registra las interrupciones por flanco de bajada
             GPIO.add_event_detect(OK_SENSOR, GPIO.FALLING, callback=self._callback_ok, bouncetime=200)
@@ -47,12 +49,12 @@ class ManejadorPortal:
             print("⚠️  No es Raspberry Pi: ManejadorPortal se inicializa sin GPIO.")
 
     def _callback_ok(self, channel):
-        if self.gui.tipo_conteo_var == 1:
+        if self.sorteo.gui.tipo_conteo_ir.get() == 1:
             if self._confirma_evento(OK_SENSOR, OK_LED):
                 self.sorteo.incrementa_contador(OK_INDICE)
 
     def _callback_ng(self, channel):
-        if self.gui.tipo_conteo_var == 1:
+        if self.sorteo.gui.tipo_conteo_ir.get() == 1:
             if self._confirma_evento(NG_SENSOR, NG_LED):
                 self.sorteo.incrementa_contador(NG_INDICE)
 
@@ -108,5 +110,35 @@ class ManejadorPortal:
                 return False
         return False
 
+    def prende_led_ok(self):
+        if ES_RPI:
+            GPIO.output(OK_LED, False)
+        else:
+            print("⚠️  No es Raspberry Pi: no se puede prender el LED OK.")
+
+    def apaga_led_ok(self):
+        if ES_RPI:
+            GPIO.output(OK_LED, True)
+        else:
+            print("⚠️  No es Raspberry Pi: no se puede apagar el LED OK.")
+
+    def prende_led_ng(self):
+        if ES_RPI:
+            GPIO.output(NG_LED, False)
+        else:
+            print("⚠️  No es Raspberry Pi: no se puede prender el LED NG.")
+
+    def apaga_led_ng(self):
+        if ES_RPI:
+            GPIO.output(NG_LED, True)
+        else:
+            print("⚠️  No es Raspberry Pi: no se puede apagar el LED NG.")
+
+    def cleanup(self):
+        if ES_RPI:
+            GPIO.cleanup()
+            print("🔔 Manejador de portal limpiado y GPIOs liberados.")
+        else:
+            print("⚠️  No es Raspberry Pi: no se requiere limpieza de GPIOs.")
 
 

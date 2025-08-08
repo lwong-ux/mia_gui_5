@@ -1,2 +1,14 @@
 venv/
 *.pyc
+mia_env/
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Archivos temporales
+*.log
+*.swp
+*.tmp
+*.bak
+*.DS_Store
