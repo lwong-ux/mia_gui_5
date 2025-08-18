@@ -247,9 +247,9 @@ class ManejadorSorteo:
                 print("No se recibió dato")
                 return self.peso_actual
         except hid.HIDException as e:
-            print("Error al abrir dispositivo HID:", e)
+            #print("Error al abrir dispositivo HID:", e)
             return self.peso_actual
         except Exception as e:
-            print("Error al leer la báscula:", e)
+            #print("Error al leer la báscula:", e)
             return self.peso_actual
 
