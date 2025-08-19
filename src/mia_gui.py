@@ -375,7 +375,7 @@ class MiaGui:
         separador2 = tk.Frame(self.peso_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
         separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 5))
 
-        tk.Label(self.peso_container, text="DETECCIÓN DE PIEZAS POR PESO (gramos)", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
+        tk.Label(self.peso_container, text="DETECCIÓN DE PIEZAS/PESO (gms)", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
         #
         # lectura_peso_container: (OK) Lectura anterior, actual y pieza registrada
         #
