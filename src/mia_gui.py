@@ -63,8 +63,8 @@ class MiaGui:
         self.tipo_conteo_peso = tk.IntVar(value=0)
         tipo_conteo_row = tk.Frame(variable_frame, relief=tk.GROOVE, borderwidth=2)
         tipo_conteo_row.pack(side=tk.TOP, pady=(10,0), anchor="center")
-        tk.Checkbutton(tipo_conteo_row, text="IR", variable=self.tipo_conteo_ir, onvalue=1, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=60)
-        tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=2, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=60)
+        tk.Checkbutton(tipo_conteo_row, text="IR", variable=self.tipo_conteo_ir, onvalue=1, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(10,50))
+        tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=2, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(50,10))
 
         #
         # Sub-frame multiplicador_frame: Checkboxes X1, X10 y X100
@@ -143,10 +143,10 @@ class MiaGui:
         # Sub-frame pieza_container: PIEZA No.
         #
         pieza_container = tk.Frame(variable_frame)
-        pieza_container.pack(pady=(10,20), fill=tk.X)
+        pieza_container.pack(pady=(10,20), padx=(10,10), fill=tk.X)
         self.pieza_label = tk.Label(pieza_container, text="PIEZA No.", font=("Arial", 16))
         self.pieza_label.pack(side=tk.LEFT, padx=(10,10))
-        self.pieza_entry = tk.Entry(pieza_container, font=("Arial", 80), width=7)
+        self.pieza_entry = tk.Entry(pieza_container, font=("Arial", 70), width=6)
         self.pieza_entry.pack(side=tk.LEFT, padx=5)
         self.pieza_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
@@ -178,7 +178,7 @@ class MiaGui:
         # Contenedor para los botones de Desconecta, Mesa y Conecta en un solo renglón
         #
         button_row = tk.Frame(variable_frame)
-        button_row.pack(fill=tk.X, pady=(30, 30))
+        button_row.pack(fill=tk.X, pady=(30, 10))
         button_row.columnconfigure(0, weight=1)
         button_row.columnconfigure(1, weight=1)
         button_row.columnconfigure(2, weight=1)
@@ -304,7 +304,7 @@ class MiaGui:
         #
         #self.bascula_container = tk.Frame(text_frame, relief=tk.GROOVE, borderwidth=2)
         self.bascula_container = tk.Frame(text_frame)
-        self.bascula_container.pack(padx=(20,20), pady=(2,2), fill=tk.X)
+        self.bascula_container.pack(padx=(10,10), pady=(2,2), fill=tk.X)
         # Título centrado para el frame de báscula
         tk.Label(self.bascula_container, text="PESO / PIEZA  (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
 
@@ -380,26 +380,26 @@ class MiaGui:
         # Peso último y actual
         peso_row = tk.Frame(self.peso_container)
         peso_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(20,10))
-        self.peso_ultimo_label = tk.Label(peso_row, text="Peso Anterior:", font=("Arial", 14))
+        self.peso_ultimo_label = tk.Label(peso_row, text="Anterior:", font=("Arial", 14))
         self.peso_ultimo_label.pack(side=tk.LEFT, padx=5)
         self.peso_ultimo_entry = tk.Entry(peso_row, font=("Arial", 14), width=6)
         self.peso_ultimo_entry.pack(side=tk.LEFT, padx=2)
         self.peso_ultimo_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
-        self.peso_actual_label = tk.Label(peso_row, text="Peso Actual:", font=("Arial", 14))
-        self.peso_actual_label.pack(side=tk.LEFT, padx=10)
+        self.peso_actual_label = tk.Label(peso_row, text="Actual:", font=("Arial", 14))
+        self.peso_actual_label.pack(side=tk.LEFT, padx=20)
         self.peso_actual_entry = tk.Entry(peso_row, font=("Arial", 14), width=6)
         self.peso_actual_entry.pack(side=tk.LEFT, padx=2)
         self.peso_actual_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
        
         pieza_final_container = tk.Frame(self.peso_container)
         pieza_final_container.pack(pady=(10, 10), fill=tk.X, anchor='n')
-        self.pieza_final_label = tk.Label(pieza_final_container, text="PZA REGISTRADA", font=("Arial", 16))
+        self.pieza_final_label = tk.Label(pieza_final_container, text="PZA OK", font=("Arial", 16))
         self.pieza_final_label.pack(side=tk.LEFT, padx=(10,0))
         self.pieza_final_peso_entry = tk.Entry(pieza_final_container, font=("Arial", 24), width=6)
         self.pieza_final_peso_entry.pack(side=tk.LEFT, padx=5)
         self.pieza_final_peso_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
-        self.pieza_final_peso_entry.insert(0, f"{self.sorteo.pieza_numero-1:>8}")
-        self.pieza_final_label_2 = tk.Label(pieza_final_container, text="Gramos", font=("Arial", 14))
+        #self.pieza_final_peso_entry.insert(0, f"{self.sorteo.pieza_numero-1:>6}")
+        self.pieza_final_label_2 = tk.Label(pieza_final_container, text="gms", font=("Arial", 14))
         self.pieza_final_label_2.pack(side=tk.LEFT, padx=(10,0))
         
         # Línea de Tx
@@ -463,7 +463,7 @@ class MiaGui:
             # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
-        self.pieza_entry.insert(0, f"{pieza_numero:>10}")
+        self.pieza_entry.insert(0, f"{pieza_numero:>6}")
         entrys[idx].delete(0, 'end')
         entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>10}")
 
@@ -518,7 +518,7 @@ class MiaGui:
             # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
-        self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>10}")
+        self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
         for idx in range(len(entrys)):
             entrys[idx].delete(0, 'end')
             entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>10}")
