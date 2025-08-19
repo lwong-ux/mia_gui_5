@@ -15,7 +15,7 @@ import random
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Portal             Ver 5.1")
+        self.root.title("Wong Instruments             MIA - Portal             Ver 5.3")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("src/wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
@@ -70,7 +70,7 @@ class MiaGui:
         # Sub-frame multiplicador_frame: Checkboxes X1, X10 y X100
         #
         multiplicador_frame = tk.Frame(variable_frame)
-        multiplicador_frame.pack(padx=(60, 60), pady=(20, 2), anchor="center")
+        multiplicador_frame.pack(padx=(60, 60), pady=(30, 5), anchor="center")
         self.multiplicador_var = tk.IntVar(value=1)
 
         radio_x1 = tk.Radiobutton(multiplicador_frame, text="x1", variable=self.multiplicador_var, value=1, font=("Arial", 16))
@@ -95,14 +95,14 @@ class MiaGui:
         # pza_ok_container: Etiqueta, cajita y contador para "Piezas OK"
         #
         pza_ok_container = tk.Frame(variable_frame)
-        pza_ok_container.pack(padx=(50,50), pady=(15,5),anchor="center")
+        pza_ok_container.pack(padx=(10,10), pady=(15,5),anchor="center")
         self.pza_ok_label = tk.Label(pza_ok_container, text="OK", font=("Arial", 18))
-        self.pza_ok_label.pack(side=tk.LEFT, padx=5)
-        self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 22), width=8)
-        self.pza_ok_entry.pack(side=tk.LEFT, padx=5)
+        self.pza_ok_label.pack(side=tk.LEFT, padx=1)
+        self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 26), width=5)
+        self.pza_ok_entry.pack(side=tk.LEFT, padx=(1,5))
         self.pza_ok_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         ok_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-        ok_btn.pack(side=tk.LEFT, padx=5)
+        ok_btn.pack(side=tk.LEFT, padx=2)
         rect_ok_1 = ok_btn.create_rectangle(0, 0, 36, 36, fill="#7CBB00", outline="")
         rect_ok_2 = ok_btn.create_rectangle(4, 4, 32, 32, fill="white", outline="")
         ok_btn.bind("<Button-1>", make_incrementa_callback(0))
@@ -118,15 +118,15 @@ class MiaGui:
         #
         # pza_ng_container_mix: Etiqueta, cajita y contador para "Piezas NG-MIX"
         #
-        pza_ng_container_mix = tk.Frame(variable_frame)
-        pza_ng_container_mix.pack(padx=(50,50), pady=(10, 20), anchor="center")
-        self.pza_ng_label_mix = tk.Label(pza_ng_container_mix, text="NG", font=("Arial", 18))
-        self.pza_ng_label_mix.pack(side=tk.LEFT, padx=5)
-        self.pza_ng_entry_mix = tk.Entry(pza_ng_container_mix, font=("Arial", 22), width=8)
-        self.pza_ng_entry_mix.pack(side=tk.LEFT, padx=5)
+        #pza_ng_container_mix = tk.Frame(variable_frame)
+        #pza_ng_container_mix.pack(padx=(50,50), pady=(10, 20), anchor="center")
+        self.pza_ng_label_mix = tk.Label(pza_ok_container, text="NG", font=("Arial", 18))
+        self.pza_ng_label_mix.pack(side=tk.LEFT, padx=(20,1))
+        self.pza_ng_entry_mix = tk.Entry(pza_ok_container, font=("Arial", 26), width=5)
+        self.pza_ng_entry_mix.pack(side=tk.LEFT, padx=(1,5))
         self.pza_ng_entry_mix.bind("<Key>", lambda e: "break")  # Bloquea teclado
-        ngmix_btn = tk.Canvas(pza_ng_container_mix, width=36, height=36, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-        ngmix_btn.pack(side=tk.LEFT, padx=5)
+        ngmix_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
+        ngmix_btn.pack(side=tk.LEFT, padx=2)
         ngmix_btn.create_rectangle(0, 0, 36, 36, fill="#FA0505", outline="")
         rect_ngmix = ngmix_btn.create_rectangle(4, 4, 32, 32, fill="white", outline="")
         ngmix_btn.bind("<Button-1>", make_incrementa_callback(1))
@@ -143,7 +143,7 @@ class MiaGui:
         # Sub-frame pieza_container: PIEZA No.
         #
         pieza_container = tk.Frame(variable_frame)
-        pieza_container.pack(pady=(10,20), padx=(10,10), fill=tk.X)
+        pieza_container.pack(pady=(30,30), padx=(10,10), fill=tk.X)
         self.pieza_label = tk.Label(pieza_container, text="PIEZA No.", font=("Arial", 16))
         self.pieza_label.pack(side=tk.LEFT, padx=(10,10))
         self.pieza_entry = tk.Entry(pieza_container, font=("Arial", 70), width=6)
@@ -178,7 +178,7 @@ class MiaGui:
         # Contenedor para los botones de Desconecta, Mesa y Conecta en un solo renglón
         #
         button_row = tk.Frame(variable_frame)
-        button_row.pack(fill=tk.X, pady=(30, 10))
+        button_row.pack(fill=tk.X, pady=(30, 30))
         button_row.columnconfigure(0, weight=1)
         button_row.columnconfigure(1, weight=1)
         button_row.columnconfigure(2, weight=1)
@@ -310,7 +310,7 @@ class MiaGui:
 
         # Peso 1
         peso_1_row = tk.Frame(self.bascula_container)
-        peso_1_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=4)
+        peso_1_row.pack(side=tk.TOP,  anchor="center", pady=4)
         self.peso_1_label = tk.Label(peso_1_row, text="M1", font=("Arial", 14))
         self.peso_1_label.pack(side=tk.LEFT, padx=5)
         self.peso_1_entry = tk.Entry(peso_1_row, font=("Arial", 14), width=5)
@@ -320,7 +320,7 @@ class MiaGui:
 
         # Peso 2
         peso_2_row = tk.Frame(self.bascula_container)
-        peso_2_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=4)
+        peso_2_row.pack(side=tk.TOP, anchor="center", pady=4)
         self.peso_2_label = tk.Label(peso_2_row, text="M2", font=("Arial", 14))
         self.peso_2_label.pack(side=tk.LEFT, padx=5)
         self.peso_2_entry = tk.Entry(peso_2_row, font=("Arial", 14), width=5)
@@ -330,7 +330,7 @@ class MiaGui:
 
         # Peso 3
         peso_3_row = tk.Frame(self.bascula_container)
-        peso_3_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=4)
+        peso_3_row.pack(side=tk.TOP, anchor="center", pady=4)
         self.peso_3_label = tk.Label(peso_3_row, text="M3", font=("Arial", 14))
         self.peso_3_label.pack(side=tk.LEFT, padx=5)
         self.peso_3_entry = tk.Entry(peso_3_row, font=("Arial", 14), width=5)
@@ -340,13 +340,13 @@ class MiaGui:
 
         # Renglón de Tolerancia
         tolerancia_row = tk.Frame(self.bascula_container)
-        tolerancia_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(10,15))
+        tolerancia_row.pack(side=tk.TOP, anchor="center", pady=(10,15))
         self.peso_promedio_label = tk.Label(tolerancia_row, text="Peso Prom", font=("Arial", 14))
         self.peso_promedio_label.pack(side=tk.LEFT, padx=5)
         self.peso_promedio_entry = tk.Entry(tolerancia_row, font=("Arial", 14), width=5)
         self.peso_promedio_entry.pack(side=tk.LEFT, padx=0)
         #
-        self.tolerancia_label = tk.Label(tolerancia_row, text="Tolerancia (%)", font=("Arial", 14))
+        self.tolerancia_label = tk.Label(tolerancia_row, text="+/- (%)", font=("Arial", 14))
         self.tolerancia_label.pack(side=tk.LEFT, padx=(15,0))
         self.tolerancia_var = tk.StringVar(value="20")  # Valor por omisión 15%
         self.tolerancia_menu = ttk.Combobox(tolerancia_row, textvariable=self.tolerancia_var, 
@@ -465,7 +465,7 @@ class MiaGui:
         ]
         self.pieza_entry.insert(0, f"{pieza_numero:>6}")
         entrys[idx].delete(0, 'end')
-        entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>10}")
+        entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
 
     #  Función de respuesta al toque para los botones de tipo de incidente ("callback")
     def circulo_boton_callback(self, idx):
@@ -521,7 +521,7 @@ class MiaGui:
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
         for idx in range(len(entrys)):
             entrys[idx].delete(0, 'end')
-            entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>10}")
+            entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
          
     def lee_mesa(self):
         try:
