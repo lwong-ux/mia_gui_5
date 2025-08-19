@@ -26,6 +26,7 @@ class ManejadorSorteo:
         # Variables de la báscula
         self.peso_anterior = 0.0
         self.peso_actual = 0.0
+        self.tara = 0.0  # Tara de la báscula
     
     # Respuesta al botón INIC: limpia contadores
     def inicia_conteo(self):
@@ -182,9 +183,18 @@ class ManejadorSorteo:
     def muestrea_bascula(self):
         self.gui.apaga_peso_actual()
         time.sleep(0.5)
-        peso_bascula = self.lee_bascula_ok()   
-        self.gui.despliega_peso_actual(peso_bascula)
+        peso_bascula = self.lee_bascula_ok()
+        if peso_bascula < 0.0:  
+            self.tara = self.peso_anterior
+            self.gui.despliega_bascula_apagada(True)
+            time.sleep(0.75)
+            self.gui.despliega_bascula_apagada(False)
+            return
+        else:
+            peso_bascula = peso_bascula + self.tara
+            self.gui.despliega_peso_actual(peso_bascula)
 
+        self.gui.despliega_titulo_peso()
         if self.gui.tipo_conteo_peso.get() == False:
             return
 
@@ -247,9 +257,8 @@ class ManejadorSorteo:
                 print("No se recibió dato")
                 return self.peso_actual
         except hid.HIDException as e:
-            #print("Error al abrir dispositivo HID:", e)
-            return self.peso_actual
+            return -1.0  # Valor de error, no se pudo leer la báscula
         except Exception as e:
-            #print("Error al leer la báscula:", e)
+            print("Error al leer la báscula:", e)
             return self.peso_actual
 

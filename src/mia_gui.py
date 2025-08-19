@@ -375,7 +375,8 @@ class MiaGui:
         separador2 = tk.Frame(self.peso_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
         separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 5))
 
-        tk.Label(self.peso_container, text="DETECCIÓN DE PIEZAS/PESO (gms)", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
+        self.titulo_peso = tk.Label(self.peso_container, text="DETECCIÓN DE PIEZAS/PESO (gms)", font=("Arial", 14))
+        self.titulo_peso.pack(pady=(5,10), anchor="center")
         #
         # lectura_peso_container: (OK) Lectura anterior, actual y pieza registrada
         #
@@ -533,7 +534,16 @@ class MiaGui:
        
     def despliega_detener(self):    
         self.detiene_conteo_button.config(text="\u00A0-DETENER-\u00A0")
-    
+
+    def despliega_titulo_peso(self):
+        self.titulo_peso.config(text="DETECCIÓN DE PIEZAS/PESO (gms)", fg="Black")
+
+    def despliega_bascula_apagada(self, despliega):
+        if despliega:
+            self.titulo_peso.config(text="Báscula apagada... ENCENDER!", fg="blue")
+        else:
+            self.titulo_peso.config(text=" ", fg="Black")
+       
     def limpia_cajitas(self):  
         entrys = [
             self.pza_ok_entry,
