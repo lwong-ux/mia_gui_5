@@ -15,7 +15,7 @@ import random
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Portal             Ver 5.4")
+        self.root.title("Wong Instruments             MIA - Portal             Ver 5.5")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("src/wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
@@ -57,14 +57,16 @@ class MiaGui:
         #sorteo_frame.config(width=420)  # Ancho fijo en píxeles
         sorteo_frame.pack_propagate(True)  # No ajustar al contenido
         sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(6, 4), padx=(5,5))
-
-        # Renglón de selección múltiple: Conteo por IR o Conteo por Peso (Checkbuttons)
+        
+        #
+        # tipo_conteo_row: Conteo por IR o Conteo por Peso (Checkbuttons)
+        #
         self.tipo_conteo_ir = tk.IntVar(value=0)
         self.tipo_conteo_peso = tk.IntVar(value=0)
         tipo_conteo_row = tk.Frame(sorteo_frame, relief=tk.GROOVE, borderwidth=2)
         tipo_conteo_row.pack(side=tk.TOP, pady=(10,0), anchor="center")
-        tk.Checkbutton(tipo_conteo_row, text="IR", variable=self.tipo_conteo_ir, onvalue=1, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(10,50))
-        tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=2, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(50,10))
+        tk.Checkbutton(tipo_conteo_row, text="BARRERA", variable=self.tipo_conteo_ir, onvalue=1, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(10,60))
+        tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=2, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(60,10))
 
         #
         # multiplicador_frame: Checkboxes X1, X10 y X100
@@ -100,6 +102,7 @@ class MiaGui:
         self.pza_ok_label.pack(side=tk.LEFT, padx=0)
         self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 26), width=5)
         self.pza_ok_entry.pack(side=tk.LEFT, padx=(0,2))
+        self.pza_ok_entry.config(bg="white", fg="#7CBB00")
         self.pza_ok_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         ok_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=sorteo_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ok_btn.pack(side=tk.LEFT, padx=1)
@@ -124,6 +127,7 @@ class MiaGui:
         self.pza_ng_label_mix.pack(side=tk.LEFT, padx=(30,0))
         self.pza_ng_entry_mix = tk.Entry(pza_ok_container, font=("Arial", 26), width=5)
         self.pza_ng_entry_mix.pack(side=tk.LEFT, padx=(1,1))
+        self.pza_ng_entry_mix.config(bg="white", fg="#FA0505")
         self.pza_ng_entry_mix.bind("<Key>", lambda e: "break")  # Bloquea teclado
         ngmix_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=sorteo_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ngmix_btn.pack(side=tk.LEFT, padx=1)
@@ -143,13 +147,14 @@ class MiaGui:
         # pieza_container: PIEZA No.
         #
         pieza_container = tk.Frame(sorteo_frame)
-        pieza_container.pack(pady=(30,30), padx=(10,10), fill=tk.X)
+        pieza_container.pack(pady=(25,25), padx=(10,10), fill=tk.X)
         self.pieza_label = tk.Label(pieza_container, text="PIEZA No.", font=("Arial", 16))
-        self.pieza_label.pack(side=tk.LEFT, padx=(10,10))
-        self.pieza_entry = tk.Entry(pieza_container, font=("Arial", 70), width=6)
-        self.pieza_entry.pack(side=tk.LEFT, padx=5)
+        self.pieza_label.pack(side=tk.LEFT, padx=(1,1))
+        self.pieza_entry = tk.Entry(pieza_container, font=("Arial", 80), width=6)
+        self.pieza_entry.pack(side=tk.LEFT, padx=2)
         self.pieza_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
+        self.pieza_entry.config(state="disabled")  # Deshabilita el Entry para evitar el cursor
 
         # Separadores horizontales tipo GROOVE 
         separador1 = tk.Frame(sorteo_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
@@ -308,7 +313,7 @@ class MiaGui:
         self.calibra_container = tk.Frame(bascula_frame)
         self.calibra_container.pack(padx=(10,10), pady=(2,2), fill=tk.X)
         # Título centrado para el frame de báscula
-        tk.Label(self.calibra_container, text="PESO / PIEZA  (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
+        tk.Label(self.calibra_container, text="PESO / PIEZA  (gramos)", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
 
         # Peso 1
         peso_1_row = tk.Frame(self.calibra_container)
@@ -359,29 +364,28 @@ class MiaGui:
         self.tolerancia_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
 
         #
-        # Sub-frame peso_container: 
+        # peso_container: Calibración de báscula y lecturas en vivo
         #
         self.peso_container = tk.Frame(bascula_frame)
         self.peso_container.pack(padx=(20,20), pady=(5,0), fill=tk.X)
-        # Título centrado para el área de comunicaiones
-        #tk.Label(self.peso_container, text="WEBSOCKET", font=("Arial", 14, "bold")).pack(pady=(5,5), anchor="center")
         
         # Separadores horizontales tipo GROOVE antes del peso_container
         separador1 = tk.Frame(self.peso_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
         separador1.pack(fill=tk.X, padx=(5,5), pady=(5, 2))
         separador2 = tk.Frame(self.peso_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
-        separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 10))
+        separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 5))
 
+        tk.Label(self.peso_container, text="DETECCIÓN DE PIEZAS POR PESO (gramos)", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
         #
-        # Sub-frame peso_container: Lectura anterior, actual y pieza registrada
+        # lectura_peso_container: (OK) Lectura anterior, actual y pieza registrada
         #
-        self.peso_container = tk.Frame(self.peso_container)
-        self.peso_container.pack(padx=(20,20), pady=(10,10), fill=tk.X)
-        tk.Label(self.peso_container, text="CONTEO POR PESO (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
-        
-        # Peso último y actual
-        peso_row = tk.Frame(self.peso_container)
-        peso_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(20,10))
+        self.lectura_peso_container = tk.Frame(self.peso_container, relief=tk.GROOVE, borderwidth=2)
+        self.lectura_peso_container.pack(padx=(10,10), pady=(10,10), fill=tk.X)
+        #
+        # peso_row: Peso último y actual 
+        #
+        peso_row = tk.Frame(self.lectura_peso_container)
+        peso_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(5,5))
         self.peso_ultimo_label = tk.Label(peso_row, text="Anterior:", font=("Arial", 14))
         self.peso_ultimo_label.pack(side=tk.LEFT, padx=5)
         self.peso_ultimo_entry = tk.Entry(peso_row, font=("Arial", 14), width=6)
@@ -393,16 +397,52 @@ class MiaGui:
         self.peso_actual_entry.pack(side=tk.LEFT, padx=2)
         self.peso_actual_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
        
-        pieza_final_container = tk.Frame(self.peso_container)
-        pieza_final_container.pack(pady=(10, 10), fill=tk.X, anchor='n')
+        pieza_final_container = tk.Frame(self.lectura_peso_container)
+        pieza_final_container.pack(pady=(5, 5), fill=tk.X, anchor='n')
         self.pieza_final_label = tk.Label(pieza_final_container, text="PZA OK", font=("Arial", 16))
         self.pieza_final_label.pack(side=tk.LEFT, padx=(10,0))
+        self.pieza_final_label.config( fg="#7CBB00")
         self.pieza_final_peso_entry = tk.Entry(pieza_final_container, font=("Arial", 24), width=6)
         self.pieza_final_peso_entry.pack(side=tk.LEFT, padx=5)
+        self.pieza_final_peso_entry.config(bg="white", fg="#7CBB00")
         self.pieza_final_peso_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         #self.pieza_final_peso_entry.insert(0, f"{self.sorteo.pieza_numero-1:>6}")
         self.pieza_final_label_2 = tk.Label(pieza_final_container, text="gms", font=("Arial", 14))
         self.pieza_final_label_2.pack(side=tk.LEFT, padx=(10,0))
+
+        #
+        # lectura_peso_ng_container: (NG) Lectura anterior, actual y pieza registrada
+        #
+        self.lectura_peso_ng_container = tk.Frame(self.peso_container, relief=tk.GROOVE, borderwidth=2)
+        self.lectura_peso_ng_container.pack(padx=(10,10), pady=(10,10), fill=tk.X)
+        #
+        # peso_row: Peso último y actual 
+        #
+        peso_ng_row = tk.Frame(self.lectura_peso_ng_container)
+        peso_ng_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(5,5))
+        self.peso_ultimo_ng_label = tk.Label(peso_ng_row, text="Anterior:", font=("Arial", 14))
+        self.peso_ultimo_ng_label.pack(side=tk.LEFT, padx=5)
+        self.peso_ultimo_ng_entry = tk.Entry(peso_ng_row, font=("Arial", 14), width=6)
+        self.peso_ultimo_ng_entry.pack(side=tk.LEFT, padx=2)
+        self.peso_ultimo_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        self.peso_actual_ng_label = tk.Label(peso_ng_row, text="Actual:", font=("Arial", 14))
+        self.peso_actual_ng_label.pack(side=tk.LEFT, padx=20)
+        self.peso_actual_ng_entry = tk.Entry(peso_ng_row, font=("Arial", 14), width=6)
+        self.peso_actual_ng_entry.pack(side=tk.LEFT, padx=2)
+        self.peso_actual_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+       
+        pieza_final_ng_container = tk.Frame(self.lectura_peso_ng_container)
+        pieza_final_ng_container.pack(pady=(5, 5), fill=tk.X, anchor='n')
+        self.pieza_final_ng_label = tk.Label(pieza_final_ng_container, text="PZA NG", font=("Arial", 16))
+        self.pieza_final_ng_label.pack(side=tk.LEFT, padx=(10,0))
+        self.pieza_final_ng_label.config( fg="#FA0505")
+        self.pieza_final_peso_ng_entry = tk.Entry(pieza_final_ng_container, font=("Arial", 24), width=6)
+        self.pieza_final_peso_ng_entry.pack(side=tk.LEFT, padx=5)
+        self.pieza_final_peso_ng_entry.config( fg="#FA0505")
+        self.pieza_final_peso_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        #self.pieza_final_peso_entry.insert(0, f"{self.sorteo.pieza_numero-1:>6}")
+        self.pieza_final_ng_label_2 = tk.Label(pieza_final_ng_container, text="gms", font=("Arial", 14))
+        self.pieza_final_ng_label_2.pack(side=tk.LEFT, padx=(10,0))
 
     # Tarea periódica para supervisar el estado de la conexión
     def supervisa_conexion(self):
@@ -446,8 +486,10 @@ class MiaGui:
             # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
+        self.pieza_entry.config(state="normal")  # Habilita temporalmente
         self.pieza_entry.delete(0, tk.END)
         self.pieza_entry.insert(0, f"{pieza_numero:>6}")
+        self.pieza_entry.config(state="disabled")  # deshabilita temporalmente
         entrys[idx].delete(0, 'end')
         entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
 
@@ -502,8 +544,10 @@ class MiaGui:
             # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
+        self.pieza_entry.config(state="normal")  # Habilita temporalmente
         self.pieza_entry.delete(0, tk.END)
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
+        self.pieza_entry.config(state="disabled")  # deshabilita temporalmente
         for idx in range(len(entrys)):
             entrys[idx].delete(0, 'end')
             entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
