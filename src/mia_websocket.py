@@ -13,7 +13,8 @@ class WebSocketMia:
 
         #self.url = URL_SIMULADOR
         self.gui = gui
-        self.url = self.gui.lee_url()  # Obtiene la URL desde la GUI
+        url = self.gui.lee_url()  # Obtiene la URL desde la GUI
+        self.url = self.convierte_url(url) 
         self.ws = None
         self.is_running = False
         self.keep_alive  = False
@@ -24,7 +25,8 @@ class WebSocketMia:
        
         # Conexión al WebSocket de Rails
         try:
-            self.url = self.gui.lee_url()
+            url = self.gui.lee_url()
+            self.url = self.convierte_url(url)
             self.mesa_id = mia_id
             #sysqb_socket = await websockets.connect(self.url, ping_interval=60, ping_timeout=30)
             self.socket_activo = await websockets.connect(
@@ -151,3 +153,14 @@ class WebSocketMia:
             print(f"Error al enviar el mensaje de suscripción: {e}")
             self.gui.despliega_mensaje_tx(f"Error al enviar el mensaje de su suscripción: {e}\n")
             return False
+        
+    def convierte_url(self, url):
+        """
+        Convierte la URL de la GUI a un formato adecuado para el WebSocket.
+        """
+        if url == "LOCAL":
+            return URL_MEZTLI
+        elif url == "RAILS Simula":
+            return URL_SIMULADOR
+        elif url == "RAILS QB":
+            return "URL_MEZTLI"  # Aquí se agrega la URL específica para RAILS QB

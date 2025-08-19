@@ -15,7 +15,7 @@ import random
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Portal             Ver 5.3")
+        self.root.title("Wong Instruments             MIA - Portal             Ver 5.4")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("src/wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
@@ -50,26 +50,26 @@ class MiaGui:
 
         #######################################################################
         #
-        #   Cuadro 1 (variable_frame): tipo de sorteo, mul, cajas de sorteo OK/NG y comunicación
+        #   Cuadro 1 (sorteo_frame): tipo de sorteo, mul, cajas de sorteo OK/NG y comunicación
         #
         # #####################################################################
-        variable_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        #variable_frame.config(width=420)  # Ancho fijo en píxeles
-        variable_frame.pack_propagate(True)  # No ajustar al contenido
-        variable_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(6, 4), padx=(5,5))
+        sorteo_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
+        #sorteo_frame.config(width=420)  # Ancho fijo en píxeles
+        sorteo_frame.pack_propagate(True)  # No ajustar al contenido
+        sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(6, 4), padx=(5,5))
 
         # Renglón de selección múltiple: Conteo por IR o Conteo por Peso (Checkbuttons)
         self.tipo_conteo_ir = tk.IntVar(value=0)
         self.tipo_conteo_peso = tk.IntVar(value=0)
-        tipo_conteo_row = tk.Frame(variable_frame, relief=tk.GROOVE, borderwidth=2)
+        tipo_conteo_row = tk.Frame(sorteo_frame, relief=tk.GROOVE, borderwidth=2)
         tipo_conteo_row.pack(side=tk.TOP, pady=(10,0), anchor="center")
         tk.Checkbutton(tipo_conteo_row, text="IR", variable=self.tipo_conteo_ir, onvalue=1, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(10,50))
         tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=2, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(50,10))
 
         #
-        # Sub-frame multiplicador_frame: Checkboxes X1, X10 y X100
+        # multiplicador_frame: Checkboxes X1, X10 y X100
         #
-        multiplicador_frame = tk.Frame(variable_frame)
+        multiplicador_frame = tk.Frame(sorteo_frame)
         multiplicador_frame.pack(padx=(60, 60), pady=(30, 5), anchor="center")
         self.multiplicador_var = tk.IntVar(value=1)
 
@@ -94,15 +94,15 @@ class MiaGui:
         #
         # pza_ok_container: Etiqueta, cajita y contador para "Piezas OK"
         #
-        pza_ok_container = tk.Frame(variable_frame)
+        pza_ok_container = tk.Frame(sorteo_frame)
         pza_ok_container.pack(padx=(10,10), pady=(15,5),anchor="center")
         self.pza_ok_label = tk.Label(pza_ok_container, text="OK", font=("Arial", 18))
-        self.pza_ok_label.pack(side=tk.LEFT, padx=1)
+        self.pza_ok_label.pack(side=tk.LEFT, padx=0)
         self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 26), width=5)
-        self.pza_ok_entry.pack(side=tk.LEFT, padx=(1,5))
+        self.pza_ok_entry.pack(side=tk.LEFT, padx=(0,2))
         self.pza_ok_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
-        ok_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-        ok_btn.pack(side=tk.LEFT, padx=2)
+        ok_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=sorteo_frame.cget("bg"), highlightthickness=0, cursor="hand2")
+        ok_btn.pack(side=tk.LEFT, padx=1)
         rect_ok_1 = ok_btn.create_rectangle(0, 0, 36, 36, fill="#7CBB00", outline="")
         rect_ok_2 = ok_btn.create_rectangle(4, 4, 32, 32, fill="white", outline="")
         ok_btn.bind("<Button-1>", make_incrementa_callback(0))
@@ -118,15 +118,15 @@ class MiaGui:
         #
         # pza_ng_container_mix: Etiqueta, cajita y contador para "Piezas NG-MIX"
         #
-        #pza_ng_container_mix = tk.Frame(variable_frame)
+        #pza_ng_container_mix = tk.Frame(sorteo_frame)
         #pza_ng_container_mix.pack(padx=(50,50), pady=(10, 20), anchor="center")
         self.pza_ng_label_mix = tk.Label(pza_ok_container, text="NG", font=("Arial", 18))
-        self.pza_ng_label_mix.pack(side=tk.LEFT, padx=(20,1))
+        self.pza_ng_label_mix.pack(side=tk.LEFT, padx=(30,0))
         self.pza_ng_entry_mix = tk.Entry(pza_ok_container, font=("Arial", 26), width=5)
-        self.pza_ng_entry_mix.pack(side=tk.LEFT, padx=(1,5))
+        self.pza_ng_entry_mix.pack(side=tk.LEFT, padx=(1,1))
         self.pza_ng_entry_mix.bind("<Key>", lambda e: "break")  # Bloquea teclado
-        ngmix_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=variable_frame.cget("bg"), highlightthickness=0, cursor="hand2")
-        ngmix_btn.pack(side=tk.LEFT, padx=2)
+        ngmix_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=sorteo_frame.cget("bg"), highlightthickness=0, cursor="hand2")
+        ngmix_btn.pack(side=tk.LEFT, padx=1)
         ngmix_btn.create_rectangle(0, 0, 36, 36, fill="#FA0505", outline="")
         rect_ngmix = ngmix_btn.create_rectangle(4, 4, 32, 32, fill="white", outline="")
         ngmix_btn.bind("<Button-1>", make_incrementa_callback(1))
@@ -140,9 +140,9 @@ class MiaGui:
         ngmix_btn.bind("<Leave>", on_ngmix_leave)
 
         #
-        # Sub-frame pieza_container: PIEZA No.
+        # pieza_container: PIEZA No.
         #
-        pieza_container = tk.Frame(variable_frame)
+        pieza_container = tk.Frame(sorteo_frame)
         pieza_container.pack(pady=(30,30), padx=(10,10), fill=tk.X)
         self.pieza_label = tk.Label(pieza_container, text="PIEZA No.", font=("Arial", 16))
         self.pieza_label.pack(side=tk.LEFT, padx=(10,10))
@@ -152,41 +152,43 @@ class MiaGui:
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
 
         # Separadores horizontales tipo GROOVE 
-        separador1 = tk.Frame(variable_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
+        separador1 = tk.Frame(sorteo_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
         separador1.pack(fill=tk.X, padx=(5,5), pady=(5, 2))
-        separador2 = tk.Frame(variable_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
+        separador2 = tk.Frame(sorteo_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
         separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 5))
 
-        # Sub-frame para la señal de conexión y URL (en una sola línea)
-        signal_row = tk.Frame(variable_frame)
-        signal_row.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(20, 10))
+        #
+        # signal_row: Contenedor para señal de conexión y URL (en una sola línea)
+        #
+        signal_row = tk.Frame(sorteo_frame)
+        signal_row.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(30, 0))
 
-        #tk.Label(signal_row, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
-        self.signal_canvas = tk.Canvas(signal_row, width=20, height=20, bg=variable_frame.cget("bg"), highlightthickness=0)
+        tk.Label(signal_row, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
+        self.signal_canvas = tk.Canvas(signal_row, width=20, height=20, bg=sorteo_frame.cget("bg"), highlightthickness=0)
         self.signal_canvas.pack(side=tk.LEFT, padx=(0, 10))
         self.signal_circle = self.signal_canvas.create_oval(2, 2, 18, 18, fill="gray", outline="")
         self.signal_circle = self.signal_canvas.create_oval(4, 4, 16, 16, fill="gray", outline="")
 
-        self.url_label = tk.Label(signal_row, text="URL:", font=("DejaVu Sans Mono", 12))
+        self.url_label = tk.Label(signal_row, text="URL:", font=("DejaVu Sans Mono", 14))
         self.url_label.pack(side=tk.LEFT, padx=(0, 5))
-        self.url_menu = ttk.Combobox(signal_row, textvariable=self.url_var, font=("Arial", 12), width=30, state="readonly")
-        self.url_menu['values'] = ["ws://192.168.100.25:3000/cable", "ws://shielded-taiga-04156.herokuapp.com/cable"]
+        self.url_menu = ttk.Combobox(signal_row, textvariable=self.url_var, font=("Arial", 16), width=9, state="readonly")
+        self.url_menu['values'] = ["LOCAL", "SIMULA", "QB"]
         self.url_menu.current(0)
         self.url_menu.pack(side=tk.LEFT)
 
         #
-        # Contenedor para los botones de Desconecta, Mesa y Conecta en un solo renglón
+        # conecta_button_row: Contenedor para los botones Desconecta, Mesa y Conecta 
         #
-        button_row = tk.Frame(variable_frame)
-        button_row.pack(fill=tk.X, pady=(30, 30))
-        button_row.columnconfigure(0, weight=1)
-        button_row.columnconfigure(1, weight=1)
-        button_row.columnconfigure(2, weight=1)
+        conecta_button_row = tk.Frame(sorteo_frame)
+        conecta_button_row.pack(fill=tk.X, pady=(30, 30))
+        conecta_button_row.columnconfigure(0, weight=1)
+        conecta_button_row.columnconfigure(1, weight=1)
+        conecta_button_row.columnconfigure(2, weight=1)
 
         # Botón DESCONECTA
         style = ttk.Style()
         style.configure("Red.TButton", foreground="gray", font=("DejaVu Sans Mono", 12))
-        self.disconnect_button = tk.Button(button_row, text="DESC", command=self.desconecta_sysqb, relief=tk.RAISED,
+        self.disconnect_button = tk.Button(conecta_button_row, text="DESC", command=self.desconecta_sysqb, relief=tk.RAISED,
             bd=4,
             height=1,
             width=6,
@@ -198,7 +200,7 @@ class MiaGui:
         self.disconnect_button.grid(row=0, column=0, padx=5, sticky="nsew")
 
         # Selector de mesa
-        mesa_container = tk.Frame(button_row)
+        mesa_container = tk.Frame(conecta_button_row)
         mesa_container.grid(row=0, column=1, padx=5, sticky="nsew")
         self.mesa_label = tk.Label(mesa_container, text="MIA", font=("Arial", 18, "bold"))
         self.mesa_label.pack(side=tk.LEFT, padx=5)
@@ -279,7 +281,7 @@ class MiaGui:
 
         # Botón CONECTA
         style.configure("Green.TButton", foreground="#1094F9", font=("DejaVu Sans Mono", 12))
-        self.connect_button = tk.Button(button_row, text="CONEC", command=self.conecta_sysqb, relief=tk.RAISED,
+        self.connect_button = tk.Button(conecta_button_row, text="CONEC", command=self.conecta_sysqb, relief=tk.RAISED,
             bd=4,
             height=1,
             width=6,
@@ -293,23 +295,23 @@ class MiaGui:
         
         #######################################################################
         #
-        #   Cuadro 2 (text_frame):  Señal de conexión, mensajes Tx/Rx y botones CONECTA/DESCONECTA
+        #   Cuadro 2 (bascula_frame):  Despliegue de báscula: calibración y tiempo real de peso
         #
         #######################################################################
-        text_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        text_frame.pack(side=tk.RIGHT, fill=tk.Y, expand=False, pady=(6, 4), padx=(5, 15))
+        bascula_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
+        bascula_frame.pack(side=tk.RIGHT, fill=tk.Y, expand=False, pady=(6, 4), padx=(5, 15))
 
         #
-        # Sub-frame bascula_container: 
+        # Sub-frame calibra_container: 
         #
-        #self.bascula_container = tk.Frame(text_frame, relief=tk.GROOVE, borderwidth=2)
-        self.bascula_container = tk.Frame(text_frame)
-        self.bascula_container.pack(padx=(10,10), pady=(2,2), fill=tk.X)
+        #self.calibra_container = tk.Frame(bascula_frame, relief=tk.GROOVE, borderwidth=2)
+        self.calibra_container = tk.Frame(bascula_frame)
+        self.calibra_container.pack(padx=(10,10), pady=(2,2), fill=tk.X)
         # Título centrado para el frame de báscula
-        tk.Label(self.bascula_container, text="PESO / PIEZA  (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
+        tk.Label(self.calibra_container, text="PESO / PIEZA  (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
 
         # Peso 1
-        peso_1_row = tk.Frame(self.bascula_container)
+        peso_1_row = tk.Frame(self.calibra_container)
         peso_1_row.pack(side=tk.TOP,  anchor="center", pady=4)
         self.peso_1_label = tk.Label(peso_1_row, text="M1", font=("Arial", 14))
         self.peso_1_label.pack(side=tk.LEFT, padx=5)
@@ -319,7 +321,7 @@ class MiaGui:
         self.peso_1_btn.pack(side=tk.LEFT, padx=5)
 
         # Peso 2
-        peso_2_row = tk.Frame(self.bascula_container)
+        peso_2_row = tk.Frame(self.calibra_container)
         peso_2_row.pack(side=tk.TOP, anchor="center", pady=4)
         self.peso_2_label = tk.Label(peso_2_row, text="M2", font=("Arial", 14))
         self.peso_2_label.pack(side=tk.LEFT, padx=5)
@@ -329,7 +331,7 @@ class MiaGui:
         self.peso_2_btn.pack(side=tk.LEFT, padx=5)
 
         # Peso 3
-        peso_3_row = tk.Frame(self.bascula_container)
+        peso_3_row = tk.Frame(self.calibra_container)
         peso_3_row.pack(side=tk.TOP, anchor="center", pady=4)
         self.peso_3_label = tk.Label(peso_3_row, text="M3", font=("Arial", 14))
         self.peso_3_label.pack(side=tk.LEFT, padx=5)
@@ -339,7 +341,7 @@ class MiaGui:
         self.peso_3_btn.pack(side=tk.LEFT, padx=5)
 
         # Renglón de Tolerancia
-        tolerancia_row = tk.Frame(self.bascula_container)
+        tolerancia_row = tk.Frame(self.calibra_container)
         tolerancia_row.pack(side=tk.TOP, anchor="center", pady=(10,15))
         self.peso_promedio_label = tk.Label(tolerancia_row, text="Peso Prom", font=("Arial", 14))
         self.peso_promedio_label.pack(side=tk.LEFT, padx=5)
@@ -357,23 +359,23 @@ class MiaGui:
         self.tolerancia_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
 
         #
-        # Sub-frame comunica_container: 
+        # Sub-frame peso_container: 
         #
-        self.comunica_container = tk.Frame(text_frame)
-        self.comunica_container.pack(padx=(20,20), pady=(5,0), fill=tk.X)
+        self.peso_container = tk.Frame(bascula_frame)
+        self.peso_container.pack(padx=(20,20), pady=(5,0), fill=tk.X)
         # Título centrado para el área de comunicaiones
-        #tk.Label(self.comunica_container, text="WEBSOCKET", font=("Arial", 14, "bold")).pack(pady=(5,5), anchor="center")
+        #tk.Label(self.peso_container, text="WEBSOCKET", font=("Arial", 14, "bold")).pack(pady=(5,5), anchor="center")
         
         # Separadores horizontales tipo GROOVE antes del peso_container
-        separador1 = tk.Frame(self.comunica_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
+        separador1 = tk.Frame(self.peso_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
         separador1.pack(fill=tk.X, padx=(5,5), pady=(5, 2))
-        separador2 = tk.Frame(self.comunica_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
+        separador2 = tk.Frame(self.peso_container, height=1, bd=1, relief=tk.GROOVE, bg="gray")
         separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 10))
 
         #
         # Sub-frame peso_container: Lectura anterior, actual y pieza registrada
         #
-        self.peso_container = tk.Frame(self.comunica_container)
+        self.peso_container = tk.Frame(self.peso_container)
         self.peso_container.pack(padx=(20,20), pady=(10,10), fill=tk.X)
         tk.Label(self.peso_container, text="CONTEO POR PESO (gramos)", font=("Arial", 14, "bold")).pack(pady=(5,10), anchor="center")
         
@@ -401,25 +403,6 @@ class MiaGui:
         #self.pieza_final_peso_entry.insert(0, f"{self.sorteo.pieza_numero-1:>6}")
         self.pieza_final_label_2 = tk.Label(pieza_final_container, text="gms", font=("Arial", 14))
         self.pieza_final_label_2.pack(side=tk.LEFT, padx=(10,0))
-        
-        # Línea de Tx
-        # tx_row = tk.Frame(self.comunica_container)
-        # tx_row.pack(fill=tk.X, padx=(5,5), pady=(15, 10))
-        # tk.Label(tx_row, text="Tx", font=("DejaVu Sans Mono", 14)).pack(side=tk.LEFT, anchor="n", padx=(0, 5))
-        # self.text_area_tx = scrolledtext.ScrolledText(tx_row, wrap=tk.WORD, width=25, height=3, font=("DejaVu Sans Mono", 11))
-        # self.text_area_tx.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        # self.text_area_tx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
-        # self.text_area_tx.insert("1.0", " ", "margin")
-#
-        # Línea de Rx
-        # rx_row = tk.Frame(self.comunica_container)
-        # rx_row.pack(fill=tk.X, padx=(5,5), pady=(5, 10))
-        # tk.Label(rx_row, text="Rx", font=("DejaVu Sans Mono", 14)).pack(side=tk.LEFT, anchor="n", padx=(0, 5))
-        # self.text_area_rx = scrolledtext.ScrolledText(rx_row, wrap=tk.WORD, width=25, height=3, font=("DejaVu Sans Mono", 11))
-        # self.text_area_rx.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        # self.text_area_rx.tag_configure("margin", lmargin1=10, lmargin2=10, rmargin=10)
-        # self.text_area_rx.insert("1.0", " ", "margin")
-       
 
     # Tarea periódica para supervisar el estado de la conexión
     def supervisa_conexion(self):
@@ -463,6 +446,7 @@ class MiaGui:
             # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
+        self.pieza_entry.delete(0, tk.END)
         self.pieza_entry.insert(0, f"{pieza_numero:>6}")
         entrys[idx].delete(0, 'end')
         entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
@@ -518,6 +502,7 @@ class MiaGui:
             # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
+        self.pieza_entry.delete(0, tk.END)
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
         for idx in range(len(entrys)):
             entrys[idx].delete(0, 'end')
