@@ -660,7 +660,7 @@ class MiaGui:
         try:
             peso = self.sorteo.peso_bascula  # Obtiene el peso de la báscula
             self.peso_entries[self.muestra_actual].delete(0, tk.END)
-            self.peso_entries[self.muestra_actual].insert(0, str(peso))
+            self.peso_entries[self.muestra_actual].insert(0, f"{str(peso):>5}")
 
             # Actualiza el índice de la muestra actual
             self.muestra_actual = (self.muestra_actual + 1) % 3  # Recorre en círculos (0, 1, 2)
