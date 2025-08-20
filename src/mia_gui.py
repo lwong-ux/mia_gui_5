@@ -336,35 +336,61 @@ class MiaGui:
         self.tolerancia_menu.pack(side=tk.LEFT, padx=0)
         self.tolerancia_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
 
+        # Renglón para los tres Entry y sus etiquetas
+        peso_row = tk.Frame(self.calibra_container)
+        peso_row.pack(side=tk.TOP, anchor="center", pady=10)
+
+        self.peso_labels = []
+        self.peso_entries = []
+
+        for i in range(1, 4):  # Itera para M1, M2, M3
+            label = tk.Label(peso_row, text=f"M{i}", font=("Arial", 14))
+            label.pack(side=tk.LEFT, padx=0)
+            self.peso_labels.append(label)
+
+            entry = tk.Entry(peso_row, font=("Arial", 14), width=5)
+            entry.pack(side=tk.LEFT, padx=(0,10))
+            self.peso_entries.append(entry)
+
+        # Renglón para el botón de toma de muestras secuenciales
+        self.muestra_actual = 0  # Índice de la muestra actual (0 para M1, 1 para M2, etc.)
+        self.boton_toma_muestra = tk.Button(
+            self.calibra_container,
+            text=f"MUESTRA {self.muestra_actual + 1}",
+            font=("Arial", 16),
+            command=self.toma_muestra_secuencial
+        )
+        self.boton_toma_muestra.pack(side=tk.TOP, pady=(10,20))
+
         # Peso 1
-        peso_1_row = tk.Frame(self.calibra_container)
-        peso_1_row.pack(side=tk.TOP,  anchor="center", pady=4)
-        self.peso_1_label = tk.Label(peso_1_row, text="M1", font=("Arial", 14))
-        self.peso_1_label.pack(side=tk.LEFT, padx=5)
-        self.peso_1_entry = tk.Entry(peso_1_row, font=("Arial", 14), width=5)
-        self.peso_1_entry.pack(side=tk.LEFT, padx=5)
-        self.peso_1_btn = tk.Button(peso_1_row, text="Registra", font=("Arial", 16), command=self.lee_peso_1)
-        self.peso_1_btn.pack(side=tk.LEFT, padx=5)
+        # peso_1_row = tk.Frame(self.calibra_container)
+        # peso_1_row.pack(side=tk.TOP,  anchor="center", pady=4)
+        # self.peso_1_label = tk.Label(peso_1_row, text="M1", font=("Arial", 14))
+        # self.peso_1_label.pack(side=tk.LEFT, padx=5)
+        # self.peso_1_entry = tk.Entry(peso_1_row, font=("Arial", 14), width=5)
+        # self.peso_1_entry.pack(side=tk.LEFT, padx=5)
+        # self.peso_1_btn = tk.Button(peso_1_row, text="Registra", font=("Arial", 16), command=self.lee_peso_1)
+        # self.peso_1_btn.pack(side=tk.LEFT, padx=5)
 
         # Peso 2
-        peso_2_row = tk.Frame(self.calibra_container)
-        peso_2_row.pack(side=tk.TOP, anchor="center", pady=4)
-        self.peso_2_label = tk.Label(peso_2_row, text="M2", font=("Arial", 14))
-        self.peso_2_label.pack(side=tk.LEFT, padx=5)
-        self.peso_2_entry = tk.Entry(peso_2_row, font=("Arial", 14), width=5)
-        self.peso_2_entry.pack(side=tk.LEFT, padx=5)
-        self.peso_2_btn = tk.Button(peso_2_row, text="Registra", font=("Arial", 16), command=self.lee_peso_2)
-        self.peso_2_btn.pack(side=tk.LEFT, padx=5)
+        # peso_2_row = tk.Frame(self.calibra_container)
+        # peso_2_row.pack(side=tk.TOP, anchor="center", pady=4)
+        # self.peso_2_label = tk.Label(peso_2_row, text="M2", font=("Arial", 14))
+        # self.peso_2_label.pack(side=tk.LEFT, padx=5)
+        # self.peso_2_entry = tk.Entry(peso_2_row, font=("Arial", 14), width=5)
+        # self.peso_2_entry.pack(side=tk.LEFT, padx=5)
+        # self.peso_2_btn = tk.Button(peso_2_row, text="Registra", font=("Arial", 16), command=self.lee_peso_2)
+        # self.peso_2_btn.pack(side=tk.LEFT, padx=5)
 
         # Peso 3
-        peso_3_row = tk.Frame(self.calibra_container)
-        peso_3_row.pack(side=tk.TOP, anchor="center", pady=4)
-        self.peso_3_label = tk.Label(peso_3_row, text="M3", font=("Arial", 14))
-        self.peso_3_label.pack(side=tk.LEFT, padx=5)
-        self.peso_3_entry = tk.Entry(peso_3_row, font=("Arial", 14), width=5)
-        self.peso_3_entry.pack(side=tk.LEFT, padx=5)
-        self.peso_3_btn = tk.Button(peso_3_row, text="Registra", font=("Arial", 16), command=self.lee_peso_3)
-        self.peso_3_btn.pack(side=tk.LEFT, padx=5)
+        # peso_3_row = tk.Frame(self.calibra_container)
+        # peso_3_row.pack(side=tk.TOP, anchor="center", pady=4)
+        # self.peso_3_label = tk.Label(peso_3_row, text="M3", font=("Arial", 14))
+        # self.peso_3_label.pack(side=tk.LEFT, padx=5)
+        # self.peso_3_entry = tk.Entry(peso_3_row, font=("Arial", 14), width=5)
+        # self.peso_3_entry.pack(side=tk.LEFT, padx=5)
+        # self.peso_3_btn = tk.Button(peso_3_row, text="Registra", font=("Arial", 16), command=self.lee_peso_3)
+        # self.peso_3_btn.pack(side=tk.LEFT, padx=5)
 
         #
         # peso_container: Calibración de báscula y lecturas en vivo
@@ -629,18 +655,35 @@ class MiaGui:
         self.peso_3_entry.insert(0, str(valor))
         self.actualiza_promedio_peso()
 
+    # Función para tomar muestras secuenciales
+    def toma_muestra_secuencial(self):
+        try:
+            peso = self.sorteo.peso_bascula  # Obtiene el peso de la báscula
+            self.peso_entries[self.muestra_actual].delete(0, tk.END)
+            self.peso_entries[self.muestra_actual].insert(0, str(peso))
+
+            # Actualiza el índice de la muestra actual
+            self.muestra_actual = (self.muestra_actual + 1) % 3  # Recorre en círculos (0, 1, 2)
+
+            # Actualiza el texto del botón
+            self.boton_toma_muestra.config(text=f"MUESTRA {self.muestra_actual + 1}")
+
+            # Actualiza el promedio de peso
+            self.actualiza_promedio_peso()
+        except ValueError:
+            pass
+
     def actualiza_promedio_peso(self):
         try:
-            pesos = [
-                float(self.peso_1_entry.get()),
-                float(self.peso_2_entry.get()),
-                float(self.peso_3_entry.get())
-            ]
-            promedio = round(sum(pesos) / 3, 1)
+            # Obtiene los valores de los Entry en self.peso_entries
+            pesos = [float(entry.get()) for entry in self.peso_entries]
+            # Calcula el promedio
+            promedio = round(sum(pesos) / len(pesos), 1)
+            # Actualiza el Entry del promedio
             self.peso_promedio_entry.delete(0, tk.END)
             self.peso_promedio_entry.insert(0, str(promedio))
         except ValueError:
-            pass
+            pass  # Ignora errores si algún Entry está vacío o tiene un valor inválido
 
     def actualiza_pesos(self, anterior, actual, peso_pieza):
         self.peso_ultimo_entry.delete(0, tk.END)
