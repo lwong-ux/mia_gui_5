@@ -314,7 +314,7 @@ class MiaGui:
         self.calibra_container = tk.Frame(bascula_frame)
         self.calibra_container.pack(padx=(10,10), pady=(2,2), fill=tk.X)
         # Título centrado para el frame de báscula
-        tk.Label(self.calibra_container, text="CALIBRACIÓN GRAMOS/PIEZA --- BÁSCULA OK", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
+        tk.Label(self.calibra_container, text="CALIBRA GRAMOS/PIEZA en BÁSCULA OK", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
 
         # Renglón de Tolerancia
         tolerancia_row = tk.Frame(self.calibra_container)
