@@ -209,7 +209,7 @@ class MiaGui:
         mesa_container = tk.Frame(conecta_button_row)
         mesa_container.grid(row=0, column=1, padx=5, sticky="nsew")
         self.mesa_label = tk.Label(mesa_container, text="MIA", font=("Arial", 18, "bold"))
-        self.mesa_label.pack(side=tk.LEFT, padx=5)
+        self.mesa_label.pack(side=tk.LEFT, padx=10)
         self.mesa_var = tk.StringVar(value="1")
         
         # Fuente grande para el popdow (listado)
@@ -296,7 +296,7 @@ class MiaGui:
             fg="black",
             activebackground="#cccccc",
             activeforeground="black")
-        self.connect_button.grid(row=0, column=2, padx=5, sticky="nsew")
+        self.connect_button.grid(row=0, column=2, padx=(0,5), sticky="nsew")
 
         
         #######################################################################
