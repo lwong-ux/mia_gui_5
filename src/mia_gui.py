@@ -61,12 +61,12 @@ class MiaGui:
         #
         # tipo_conteo_row: Conteo por IR o Conteo por Peso (Checkbuttons)
         #
-        self.tipo_conteo_ir = tk.IntVar(value=0)
-        self.tipo_conteo_peso = tk.IntVar(value=0)
+        self.tipo_conteo_ir = tk.BooleanVar(value=False)
+        self.tipo_conteo_peso = tk.BooleanVar(value=False)
         tipo_conteo_row = tk.Frame(sorteo_frame, relief=tk.GROOVE, borderwidth=2)
         tipo_conteo_row.pack(side=tk.TOP, pady=(10,0), anchor="center")
-        tk.Checkbutton(tipo_conteo_row, text="BARRERA", variable=self.tipo_conteo_ir, onvalue=1, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(10,60))
-        tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=2, offvalue=0, font=("Arial", 18)).pack(side=tk.LEFT, padx=(60,10))
+        tk.Checkbutton(tipo_conteo_row, text="BARRERA", variable=self.tipo_conteo_ir, onvalue=True, offvalue=False, font=("Arial", 18)).pack(side=tk.LEFT, padx=(10,60))
+        tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=True, offvalue=False, font=("Arial", 18)).pack(side=tk.LEFT, padx=(60,10))
 
         #
         # multiplicador_frame: Checkboxes X1, X10 y X100
@@ -91,7 +91,7 @@ class MiaGui:
 
         # Función de respuesta (callback) para el tacto de las cajitas de sorteo
         def make_incrementa_callback(idx):
-            return lambda event: self.sorteo.incrementa_contador(idx)
+            return lambda event: self.sorteo.incrementa_contador(idx,0)
         
         #
         # pza_ok_container: Etiqueta, cajita y contador para "Piezas OK"
@@ -102,7 +102,7 @@ class MiaGui:
         self.pza_ok_label.pack(side=tk.LEFT, padx=0)
         self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 26), width=5)
         self.pza_ok_entry.pack(side=tk.LEFT, padx=(0,2))
-        self.pza_ok_entry.config(bg="white", fg="#7CBB00")
+        self.pza_ok_entry.config(bg="white", fg="#1CA301")
         self.pza_ok_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         ok_btn = tk.Canvas(pza_ok_container, width=36, height=36, bg=sorteo_frame.cget("bg"), highlightthickness=0, cursor="hand2")
         ok_btn.pack(side=tk.LEFT, padx=1)
@@ -153,8 +153,9 @@ class MiaGui:
         self.pieza_entry = tk.Entry(pieza_container, font=("Arial", 80), width=6)
         self.pieza_entry.pack(side=tk.LEFT, padx=2)
         self.pieza_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        self.pieza_entry.config(state="normal") 
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
-        self.pieza_entry.config(state="disabled")  # Deshabilita el Entry para evitar el cursor
+        self.pieza_entry.config(state="disabled", disabledforeground="#0241EC")  # Deshabilita el Entry para evitar el cursor
 
         # Separadores horizontales tipo GROOVE 
         separador1 = tk.Frame(sorteo_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
@@ -386,30 +387,28 @@ class MiaGui:
         # peso_row: Peso último y actual 
         #
         peso_row = tk.Frame(self.lectura_peso_container)
-        peso_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(5,5))
+        peso_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(5,0))
         self.peso_ultimo_label = tk.Label(peso_row, text="Anterior:", font=("Arial", 14))
         self.peso_ultimo_label.pack(side=tk.LEFT, padx=5)
         self.peso_ultimo_entry = tk.Entry(peso_row, font=("Arial", 14), width=6)
         self.peso_ultimo_entry.pack(side=tk.LEFT, padx=2)
         self.peso_ultimo_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         self.peso_actual_label = tk.Label(peso_row, text="Actual:", font=("Arial", 14))
-        self.peso_actual_label.pack(side=tk.LEFT, padx=20)
+        self.peso_actual_label.pack(side=tk.LEFT, padx=(20,0))
         self.peso_actual_entry = tk.Entry(peso_row, font=("Arial", 14), width=6)
         self.peso_actual_entry.pack(side=tk.LEFT, padx=2)
         self.peso_actual_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
        
         pieza_final_container = tk.Frame(self.lectura_peso_container)
         pieza_final_container.pack(pady=(5, 5), fill=tk.X, anchor='n')
-        self.pieza_final_label = tk.Label(pieza_final_container, text="PZA OK", font=("Arial", 16))
+        self.pieza_final_label = tk.Label(pieza_final_container, text="PZAS OK", font=("Arial", 20))
         self.pieza_final_label.pack(side=tk.LEFT, padx=(10,0))
-        self.pieza_final_label.config( fg="#7CBB00")
+        self.pieza_final_label.config( fg="#1CA301")
         self.pieza_final_peso_entry = tk.Entry(pieza_final_container, font=("Arial", 24), width=6)
         self.pieza_final_peso_entry.pack(side=tk.LEFT, padx=5)
-        self.pieza_final_peso_entry.config(bg="white", fg="#7CBB00")
+        self.pieza_final_peso_entry.config(bg="white", fg="#1CA301")
         self.pieza_final_peso_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
-        #self.pieza_final_peso_entry.insert(0, f"{self.sorteo.pieza_numero-1:>6}")
-        self.pieza_final_label_2 = tk.Label(pieza_final_container, text="gms", font=("Arial", 14))
-        self.pieza_final_label_2.pack(side=tk.LEFT, padx=(10,0))
+       
 
         #
         # lectura_peso_ng_container: (NG) Lectura anterior, actual y pieza registrada
@@ -420,30 +419,28 @@ class MiaGui:
         # peso_row: Peso último y actual 
         #
         peso_ng_row = tk.Frame(self.lectura_peso_ng_container)
-        peso_ng_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(5,5))
+        peso_ng_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(5,0))
         self.peso_ultimo_ng_label = tk.Label(peso_ng_row, text="Anterior:", font=("Arial", 14))
         self.peso_ultimo_ng_label.pack(side=tk.LEFT, padx=5)
         self.peso_ultimo_ng_entry = tk.Entry(peso_ng_row, font=("Arial", 14), width=6)
         self.peso_ultimo_ng_entry.pack(side=tk.LEFT, padx=2)
         self.peso_ultimo_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         self.peso_actual_ng_label = tk.Label(peso_ng_row, text="Actual:", font=("Arial", 14))
-        self.peso_actual_ng_label.pack(side=tk.LEFT, padx=20)
+        self.peso_actual_ng_label.pack(side=tk.LEFT, padx=(20,0))
         self.peso_actual_ng_entry = tk.Entry(peso_ng_row, font=("Arial", 14), width=6)
         self.peso_actual_ng_entry.pack(side=tk.LEFT, padx=2)
         self.peso_actual_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
        
         pieza_final_ng_container = tk.Frame(self.lectura_peso_ng_container)
         pieza_final_ng_container.pack(pady=(5, 5), fill=tk.X, anchor='n')
-        self.pieza_final_ng_label = tk.Label(pieza_final_ng_container, text="PZA NG", font=("Arial", 16))
+        self.pieza_final_ng_label = tk.Label(pieza_final_ng_container, text="PZAS NG", font=("Arial", 20))
         self.pieza_final_ng_label.pack(side=tk.LEFT, padx=(10,0))
         self.pieza_final_ng_label.config( fg="#FA0505")
         self.pieza_final_peso_ng_entry = tk.Entry(pieza_final_ng_container, font=("Arial", 24), width=6)
         self.pieza_final_peso_ng_entry.pack(side=tk.LEFT, padx=5)
         self.pieza_final_peso_ng_entry.config( fg="#FA0505")
         self.pieza_final_peso_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
-        #self.pieza_final_peso_entry.insert(0, f"{self.sorteo.pieza_numero-1:>6}")
-        self.pieza_final_ng_label_2 = tk.Label(pieza_final_ng_container, text="gms", font=("Arial", 14))
-        self.pieza_final_ng_label_2.pack(side=tk.LEFT, padx=(10,0))
+       
 
     # Tarea periódica para supervisar el estado de la conexión
     def supervisa_conexion(self):
@@ -539,8 +536,10 @@ class MiaGui:
         self.titulo_peso.config(text="DETECCIÓN DE PIEZAS/PESO (gms)", fg="Black")
 
     def despliega_bascula_apagada(self, despliega):
+        if self.tipo_conteo_ir.get() == True:
+            return
         if despliega:
-            self.titulo_peso.config(text="Báscula apagada... ENCENDER!", fg="blue")
+            self.titulo_peso.config(text="!!! BÁSCULA  APAGADA ...", fg="#FF0000")
         else:
             self.titulo_peso.config(text=" ", fg="Black")
        

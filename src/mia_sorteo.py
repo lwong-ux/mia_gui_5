@@ -50,8 +50,9 @@ class ManejadorSorteo:
         self.pieza_numero = 1
         self.contadores_cajitas = [0] * 2  # OK, NG-MIX
         self.gui.limpia_cajitas()
-        self.peso_anterior = 0
-        self.peso_actual = 0
+        self.peso_anterior = 0.0
+        self.peso_actual = 0.0
+        self.tara = 0.0
 
         # Pone el "radiobutton" de multiplicador en X1
         self.gui.multiplicador_var.set(1)
@@ -105,8 +106,12 @@ class ManejadorSorteo:
     def lee_ng(self):
         return self.contador_ng
 
-    def incrementa_contador(self, idx):
-        self.multiplicador = self.gui.multiplicador_var.get()
+    def incrementa_contador(self, idx, piezas):
+        if self.gui.tipo_conteo_peso.get() == True:
+            self.multiplicador = piezas
+        else:
+            self.multiplicador = self.gui.multiplicador_var.get()
+
         self.contadores_cajitas[idx] += self.multiplicador
         ok = ng = 0
         if idx == 0:
@@ -166,24 +171,10 @@ class ManejadorSorteo:
         self.hilo_bascula = threading.Thread(target=loop_muestreo, daemon=True)
         self.hilo_bascula.start()
 
-    def lee_bascula_simula(self):
-        try:
-            promedio = float(self.gui.peso_promedio_entry.get())
-            tolerancia_pct = float(self.gui.tolerancia_var.get()) / 100.0
-        except ValueError:
-            promedio = 100.0
-            tolerancia_pct = 0.05
-
-        peso_pieza = random.uniform(
-            promedio * (1.0 - tolerancia_pct),
-            promedio * (1.0 + tolerancia_pct)
-        )
-        return round(self.peso_actual + peso_pieza, 1)
-
     def muestrea_bascula(self):
         self.gui.apaga_peso_actual()
         time.sleep(0.5)
-        peso_bascula = self.lee_bascula_ok()
+        peso_bascula = self.lee_bascula()
         if peso_bascula < 0.0:  
             self.tara = self.peso_anterior
             self.gui.despliega_bascula_apagada(True)
@@ -198,12 +189,14 @@ class ManejadorSorteo:
         if self.gui.tipo_conteo_peso.get() == False:
             return
 
-        if self.es_nueva_pieza_por_peso(self.peso_anterior, peso_bascula):
+        es_valido, piezas = self.es_nueva_pieza_por_peso(self.peso_anterior, peso_bascula)
+        if es_valido:  
+            print(f"Peso válido: {peso_bascula} kg, Piezas estimadas: {piezas}")  
             self.gui.portal.prende_led_ok()
-            self.incrementa_contador(0)
+            self.incrementa_contador(0, piezas)
             peso_pieza = round(peso_bascula - self.peso_anterior, 1)
             self.peso_anterior = peso_bascula
-            self.gui.actualiza_pesos(self.peso_anterior, peso_bascula, peso_pieza)
+            self.gui.actualiza_pesos(self.peso_anterior, peso_bascula, piezas)
             time.sleep(2.0)
             self.gui.portal.apaga_led_ok()
 
@@ -212,36 +205,26 @@ class ManejadorSorteo:
             promedio = float(self.gui.peso_promedio_entry.get())
             tolerancia_pct = float(self.gui.tolerancia_var.get()) / 100.0
             incremento = actual - anterior
-            limite_inferior = promedio * (1.0 - tolerancia_pct)
-            limite_superior = promedio * (1.0 + tolerancia_pct)
-            return limite_inferior <= incremento <= limite_superior
+
+            # Si no hay incremento, no es una nueva pieza
+            if incremento <= 0:
+                return False, 0
+
+            # Estima el número de piezas basado en el incremento
+            piezas_estimadas = round(incremento / promedio)
+
+            # Calcula los límites de tolerancia para el peso total
+            limite_inferior = piezas_estimadas * promedio * (1.0 - tolerancia_pct)
+            limite_superior = piezas_estimadas * promedio * (1.0 + tolerancia_pct)
+
+            # Verifica si el peso total está dentro de la tolerancia
+            if limite_inferior <= incremento <= limite_superior:
+                return True, piezas_estimadas
+            else:
+                return False, 0
         except ValueError:
-            return False
+            return False, 0
         
-    def lee_bascula(self):
-        lecturas = []
-        num_lecturas = 3
-        umbral_estabilidad = 2.0  # gramos
-
-        for _ in range(num_lecturas):
-            try:
-                peso = self.lee_bascula()
-                lecturas.append(peso)
-            except Exception as e:
-                print("Error leyendo báscula:", e)
-                return 0.0
-            time.sleep(0.1)  # pequeña pausa entre lecturas
-
-        max_peso = max(lecturas)
-        min_peso = min(lecturas)
-
-        if max_peso - min_peso <= umbral_estabilidad:
-            return round(sum(lecturas) / len(lecturas), 1)
-        else:
-            print("Lectura inestable:", lecturas)
-            return 0.0
-
-
     def lee_bascula_ok(self):
         VENDOR_ID = 0x0922  # 2338 - 
         PRODUCT_ID = 0x8003  # 32771 - Dymo M10/M25
@@ -261,4 +244,52 @@ class ManejadorSorteo:
         except Exception as e:
             print("Error al leer la báscula:", e)
             return self.peso_actual
+        
+    def lee_bascula(self):
+        num_lecturas_max = 10  # Número máximo de lecturas consecutivas
+        umbral_estabilidad = 2.0  # Diferencia máxima permitida entre lecturas (en gramos)
+        lecturas_consecutivas_estables = 3  # Número de lecturas consecutivas necesarias para considerar estabilidad
 
+        lecturas = []
+        contador_estables = 0
+
+        for _ in range(num_lecturas_max):
+            try:
+                peso = self.lee_bascula_ok()  # Llama al método que realiza una lectura de la báscula
+                lecturas.append(peso)
+
+                # Si hay lecturas previas, compara con la última
+                if len(lecturas) > 1:
+                    diferencia = abs(lecturas[-1] - lecturas[-2])
+                    if diferencia <= umbral_estabilidad:
+                        contador_estables += 1
+                    else:
+                        contador_estables = 0  # Reinicia el contador si la lectura no es estable
+
+                # Si se alcanzan las lecturas consecutivas estables necesarias, regresa el valor promedio
+                if contador_estables >= lecturas_consecutivas_estables:
+                    return round(sum(lecturas[-lecturas_consecutivas_estables:]) / lecturas_consecutivas_estables, 1)
+
+            except Exception as e:
+                print("Error leyendo báscula:", e)
+                return 0.0  # Regresa un valor predeterminado en caso de error
+
+            time.sleep(0.1)  # Pausa breve entre lecturas para evitar lecturas rápidas consecutivas
+
+        # Si no se alcanzó estabilidad después del número máximo de lecturas, regresa un valor predeterminado
+        print("Lectura inestable después de", num_lecturas_max, "lecturas:", lecturas)
+        return 0.0
+
+    def lee_bascula_simula(self):
+        try:
+            promedio = float(self.gui.peso_promedio_entry.get())
+            tolerancia_pct = float(self.gui.tolerancia_var.get()) / 100.0
+        except ValueError:
+            promedio = 100.0
+            tolerancia_pct = 0.05
+
+        peso_pieza = random.uniform(
+            promedio * (1.0 - tolerancia_pct),
+            promedio * (1.0 + tolerancia_pct)
+        )
+        return round(self.peso_actual + peso_pieza, 1)
