@@ -15,7 +15,7 @@ import random
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Portal             Ver 5.5")
+        self.root.title("Wong Instruments             MIA - Portal             Ver 5.6")
         
         # Carga y redimensiona la imagen del logo
         original_logo = Image.open("src/wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
@@ -314,7 +314,25 @@ class MiaGui:
         self.calibra_container = tk.Frame(bascula_frame)
         self.calibra_container.pack(padx=(10,10), pady=(2,2), fill=tk.X)
         # Título centrado para el frame de báscula
-        tk.Label(self.calibra_container, text="PESO / PIEZA  (gramos)", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
+        tk.Label(self.calibra_container, text="CALIBRACIÓN GRAMOS/PIEZA --- BÁSCULA OK", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
+
+        # Renglón de Tolerancia
+        tolerancia_row = tk.Frame(self.calibra_container)
+        tolerancia_row.pack(side=tk.TOP, anchor="center", pady=(10,15))
+        self.peso_promedio_label = tk.Label(tolerancia_row, text="Peso Prom", font=("Arial", 14))
+        self.peso_promedio_label.pack(side=tk.LEFT, padx=5)
+        self.peso_promedio_entry = tk.Entry(tolerancia_row, font=("Arial", 14), width=5)
+        self.peso_promedio_entry.pack(side=tk.LEFT, padx=0)
+        #
+        self.tolerancia_label = tk.Label(tolerancia_row, text="+/- (%)", font=("Arial", 14))
+        self.tolerancia_label.pack(side=tk.LEFT, padx=(15,0))
+        self.tolerancia_var = tk.StringVar(value="20")  # Valor por omisión 15%
+        self.tolerancia_menu = ttk.Combobox(tolerancia_row, textvariable=self.tolerancia_var, 
+            font=("Arial", 16), width=4, state="readonly", justify="center")
+        self.tolerancia_menu['values'] = ["5", "10", "15", "20", "30", "50"]
+        self.tolerancia_menu.current(3)  # Selecciona el valor por omisión (10%)
+        self.tolerancia_menu.pack(side=tk.LEFT, padx=0)
+        self.tolerancia_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
 
         # Peso 1
         peso_1_row = tk.Frame(self.calibra_container)
@@ -345,24 +363,6 @@ class MiaGui:
         self.peso_3_entry.pack(side=tk.LEFT, padx=5)
         self.peso_3_btn = tk.Button(peso_3_row, text="Registra", font=("Arial", 16), command=self.lee_peso_3)
         self.peso_3_btn.pack(side=tk.LEFT, padx=5)
-
-        # Renglón de Tolerancia
-        tolerancia_row = tk.Frame(self.calibra_container)
-        tolerancia_row.pack(side=tk.TOP, anchor="center", pady=(10,15))
-        self.peso_promedio_label = tk.Label(tolerancia_row, text="Peso Prom", font=("Arial", 14))
-        self.peso_promedio_label.pack(side=tk.LEFT, padx=5)
-        self.peso_promedio_entry = tk.Entry(tolerancia_row, font=("Arial", 14), width=5)
-        self.peso_promedio_entry.pack(side=tk.LEFT, padx=0)
-        #
-        self.tolerancia_label = tk.Label(tolerancia_row, text="+/- (%)", font=("Arial", 14))
-        self.tolerancia_label.pack(side=tk.LEFT, padx=(15,0))
-        self.tolerancia_var = tk.StringVar(value="20")  # Valor por omisión 15%
-        self.tolerancia_menu = ttk.Combobox(tolerancia_row, textvariable=self.tolerancia_var, 
-            font=("Arial", 16), width=4, state="readonly", justify="center")
-        self.tolerancia_menu['values'] = ["5", "10", "15", "20", "30", "50"]
-        self.tolerancia_menu.current(3)  # Selecciona el valor por omisión (10%)
-        self.tolerancia_menu.pack(side=tk.LEFT, padx=0)
-        self.tolerancia_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
 
         #
         # peso_container: Calibración de báscula y lecturas en vivo
@@ -536,7 +536,7 @@ class MiaGui:
         self.titulo_peso.config(text="DETECCIÓN DE PIEZAS/PESO (gms)", fg="Black")
 
     def despliega_bascula_apagada(self, despliega):
-        if self.tipo_conteo_ir.get() == True:
+        if self.tipo_conteo_ir.get():
             return
         if despliega:
             self.titulo_peso.config(text="!!! BÁSCULA  APAGADA ...", fg="#FF0000")
@@ -607,19 +607,22 @@ class MiaGui:
         self.signal_canvas.itemconfig(self.signal_circle, fill="gray")
 
     def lee_peso_1(self):
-        valor = self.sorteo.lee_bascula_ok()
+        #valor = self.sorteo.lee_bascula()
+        valor =  self.sorteo.peso_bascula
         self.peso_1_entry.delete(0, tk.END)
         self.peso_1_entry.insert(0, str(valor))
         self.actualiza_promedio_peso()
 
     def lee_peso_2(self):
-        valor = self.sorteo.lee_bascula_ok()
+        #valor = self.sorteo.lee_bascula()
+        valor = self.sorteo.peso_bascula
         self.peso_2_entry.delete(0, tk.END)
         self.peso_2_entry.insert(0, str(valor))
         self.actualiza_promedio_peso()
 
     def lee_peso_3(self):
-        valor = self.sorteo.lee_bascula_ok()
+        #valor = self.sorteo.lee_bascula()
+        valor =  self.sorteo.peso_bascula
         self.peso_3_entry.delete(0, tk.END)
         self.peso_3_entry.insert(0, str(valor))
         self.actualiza_promedio_peso()
@@ -651,17 +654,17 @@ class MiaGui:
     
     def limpia_pesos(self):
         # detener hilo de muestreo
-        self.sorteo.muestreo_activo = False
-        if hasattr(self.sorteo, 'hilo_bascula') and self.sorteo.hilo_bascula.is_alive():
-            self.sorteo.hilo_bascula.join(timeout=1)
+        # self.sorteo.muestreo_activo = False
+        # if hasattr(self.sorteo, 'hilo_bascula') and self.sorteo.hilo_bascula.is_alive():
+        #     self.sorteo.hilo_bascula.join(timeout=1)
 
         # limpiar entradas
         for entry in [self.peso_ultimo_entry, self.peso_actual_entry, self.pieza_final_peso_entry]:
             entry.delete(0, tk.END)
-            entry.insert(0, str(0.0))
+            entry.insert(0, str(0).rjust(5))
 
         # reiniciar hilo de muestreo
-        self.sorteo.inicia_bascula()
+        #self.sorteo.inicia_bascula()
     
     def apaga_peso_actual(self):
         self.peso_actual_entry.delete(0, tk.END)

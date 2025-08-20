@@ -24,6 +24,7 @@ class ManejadorSorteo:
         self.contador_activo = False
 
         # Variables de la báscula
+        self.peso_bascula = 0.0
         self.peso_anterior = 0.0
         self.peso_actual = 0.0
         self.tara = 0.0  # Tara de la báscula
@@ -53,6 +54,7 @@ class ManejadorSorteo:
         self.peso_anterior = 0.0
         self.peso_actual = 0.0
         self.tara = 0.0
+        self.peso_bascula = 0.0
 
         # Pone el "radiobutton" de multiplicador en X1
         self.gui.multiplicador_var.set(1)
@@ -107,7 +109,7 @@ class ManejadorSorteo:
         return self.contador_ng
 
     def incrementa_contador(self, idx, piezas):
-        if self.gui.tipo_conteo_peso.get() == True:
+        if self.gui.tipo_conteo_peso.get():
             self.multiplicador = piezas
         else:
             self.multiplicador = self.gui.multiplicador_var.get()
@@ -161,42 +163,41 @@ class ManejadorSorteo:
     # 
     #############################################################
     def inicia_bascula(self):
-        self.muestreo_activo = True
-
+        self.sorteo_activo = True
         def loop_muestreo():
-            while self.muestreo_activo:
+            while self.sorteo_activo:
                 self.muestrea_bascula()
                 time.sleep(0.5)
-
+                   
         self.hilo_bascula = threading.Thread(target=loop_muestreo, daemon=True)
         self.hilo_bascula.start()
 
     def muestrea_bascula(self):
         self.gui.apaga_peso_actual()
         time.sleep(0.5)
-        peso_bascula = self.lee_bascula()
-        if peso_bascula < 0.0:  
+        self.peso_bascula = self.lee_bascula()
+        if self.peso_bascula < 0.0:  
             self.tara = self.peso_anterior
             self.gui.despliega_bascula_apagada(True)
             time.sleep(0.75)
             self.gui.despliega_bascula_apagada(False)
             return
         else:
-            peso_bascula = peso_bascula + self.tara
-            self.gui.despliega_peso_actual(peso_bascula)
+            self.peso_bascula = self.peso_bascula + self.tara
+            self.gui.despliega_peso_actual(self.peso_bascula)
 
         self.gui.despliega_titulo_peso()
         if self.gui.tipo_conteo_peso.get() == False:
             return
 
-        es_valido, piezas = self.es_nueva_pieza_por_peso(self.peso_anterior, peso_bascula)
+        es_valido, piezas = self.es_nueva_pieza_por_peso(self.peso_anterior, self.peso_bascula)
         if es_valido:  
-            print(f"Peso válido: {peso_bascula} kg, Piezas estimadas: {piezas}")  
+            print(f"Peso válido: {self.peso_bascula} kg, Piezas estimadas: {piezas}")  
             self.gui.portal.prende_led_ok()
             self.incrementa_contador(0, piezas)
-            peso_pieza = round(peso_bascula - self.peso_anterior, 1)
-            self.peso_anterior = peso_bascula
-            self.gui.actualiza_pesos(self.peso_anterior, peso_bascula, piezas)
+            peso_pieza = round(self.peso_bascula - self.peso_anterior, 1)
+            self.peso_anterior = self.peso_bascula
+            self.gui.actualiza_pesos(self.peso_anterior, self.peso_bascula, piezas)
             time.sleep(2.0)
             self.gui.portal.apaga_led_ok()
 
