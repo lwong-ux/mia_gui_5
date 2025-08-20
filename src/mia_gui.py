@@ -681,7 +681,7 @@ class MiaGui:
             promedio = round(sum(pesos) / len(pesos), 1)
             # Actualiza el Entry del promedio
             self.peso_promedio_entry.delete(0, tk.END)
-            self.peso_promedio_entry.insert(0, str(promedio))
+            self.peso_promedio_entry.insert(0, f"{str(promedio):>5}")
         except ValueError:
             pass  # Ignora errores si algún Entry está vacío o tiene un valor inválido
 
