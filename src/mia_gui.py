@@ -186,7 +186,7 @@ class MiaGui:
         # conecta_button_row: Contenedor para los botones Desconecta, Mesa y Conecta 
         #
         conecta_button_row = tk.Frame(sorteo_frame)
-        conecta_button_row.pack(fill=tk.X, pady=(30, 30))
+        conecta_button_row.pack(fill=tk.X, pady=(30, 30), anchor="center")
         conecta_button_row.columnconfigure(0, weight=1)
         conecta_button_row.columnconfigure(1, weight=1)
         conecta_button_row.columnconfigure(2, weight=1)
@@ -203,13 +203,15 @@ class MiaGui:
             fg="black",
             activebackground="#cccccc",
             activeforeground="black")
-        self.disconnect_button.grid(row=0, column=0, padx=5, sticky="nsew")
-
-        # Selector de mesa
+        self.disconnect_button.grid(row=0, column=0, padx=(20,10), sticky="nsew")
+        #
+        # mesa_container: Contenedor para el Combobox de mesa
+        #
         mesa_container = tk.Frame(conecta_button_row)
-        mesa_container.grid(row=0, column=1, padx=5, sticky="nsew")
+        mesa_container.grid(row=0, column=1, padx=(10,10), sticky="nsew")
+        
         self.mesa_label = tk.Label(mesa_container, text="MIA", font=("Arial", 18, "bold"))
-        self.mesa_label.pack(side=tk.LEFT, padx=10)
+        self.mesa_label.pack(side=tk.LEFT, padx=5)
         self.mesa_var = tk.StringVar(value="1")
         
         # Fuente grande para el popdow (listado)
@@ -282,7 +284,7 @@ class MiaGui:
             postcommand=_ajusta_popdown_mesa, justify="center")
         self.mesa_menu['values'] = [str(i) for i in range(1, 17)]
         self.mesa_menu.current(0)
-        self.mesa_menu.pack(side=tk.LEFT, padx=0)
+        self.mesa_menu.pack(side=tk.LEFT, padx=5)
         self.mesa_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
 
         # Botón CONECTA
@@ -296,7 +298,7 @@ class MiaGui:
             fg="black",
             activebackground="#cccccc",
             activeforeground="black")
-        self.connect_button.grid(row=0, column=2, padx=(0,5), sticky="nsew")
+        self.connect_button.grid(row=0, column=2, padx=(10,20), sticky="nsew")
 
         
         #######################################################################
