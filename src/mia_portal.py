@@ -51,12 +51,12 @@ class ManejadorPortal:
     def _callback_ok(self, channel):
         if self.sorteo.gui.tipo_conteo_ir.get() == 1:
             if self._confirma_evento(OK_SENSOR, OK_LED):
-                self.sorteo.incrementa_contador(OK_INDICE)
+                self.sorteo.incrementa_contador(OK_INDICE,1)
 
     def _callback_ng(self, channel):
         if self.sorteo.gui.tipo_conteo_ir.get() == 1:
             if self._confirma_evento(NG_SENSOR, NG_LED):
-                self.sorteo.incrementa_contador(NG_INDICE)
+                self.sorteo.incrementa_contador(NG_INDICE,1)
 
     def _confirma_evento(self, sensor, led):
         # Prende el LED
