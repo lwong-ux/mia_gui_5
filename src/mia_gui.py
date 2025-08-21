@@ -72,7 +72,7 @@ class MiaGui:
         # multiplicador_frame: Checkboxes X1, X10 y X100
         #
         multiplicador_frame = tk.Frame(sorteo_frame)
-        multiplicador_frame.pack(padx=(60, 60), pady=(30, 5), anchor="center")
+        multiplicador_frame.pack(padx=(60, 60), pady=(20, 5), anchor="center")
         self.multiplicador_var = tk.IntVar(value=1)
 
         radio_x1 = tk.Radiobutton(multiplicador_frame, text="x1", variable=self.multiplicador_var, value=1, font=("Arial", 16))
@@ -100,7 +100,7 @@ class MiaGui:
         pza_ok_container.pack(padx=(10,10), pady=(15,5),anchor="center")
         self.pza_ok_label = tk.Label(pza_ok_container, text="OK", font=("Arial", 18))
         self.pza_ok_label.pack(side=tk.LEFT, padx=0)
-        self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 26), width=5)
+        self.pza_ok_entry = tk.Entry(pza_ok_container, font=("Arial", 30), width=5)
         self.pza_ok_entry.pack(side=tk.LEFT, padx=(0,2))
         self.pza_ok_entry.config(bg="white", fg="#1CA301")
         self.pza_ok_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
@@ -125,7 +125,7 @@ class MiaGui:
         #pza_ng_container_mix.pack(padx=(50,50), pady=(10, 20), anchor="center")
         self.pza_ng_label_mix = tk.Label(pza_ok_container, text="NG", font=("Arial", 18))
         self.pza_ng_label_mix.pack(side=tk.LEFT, padx=(30,0))
-        self.pza_ng_entry_mix = tk.Entry(pza_ok_container, font=("Arial", 26), width=5)
+        self.pza_ng_entry_mix = tk.Entry(pza_ok_container, font=("Arial", 30), width=5)
         self.pza_ng_entry_mix.pack(side=tk.LEFT, padx=(1,1))
         self.pza_ng_entry_mix.config(bg="white", fg="#FA0505")
         self.pza_ng_entry_mix.bind("<Key>", lambda e: "break")  # Bloquea teclado
@@ -316,7 +316,7 @@ class MiaGui:
         self.calibra_container = tk.Frame(bascula_frame)
         self.calibra_container.pack(padx=(10,10), pady=(2,2), fill=tk.X)
         # Título centrado para el frame de báscula
-        tk.Label(self.calibra_container, text="CALIBRA GRAMOS/PIEZA en BÁSCULA OK", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
+        tk.Label(self.calibra_container, text="CALIBRA PESO/PIEZA (BÁSCULA OK)", font=("Arial", 14)).pack(pady=(5,10), anchor="center")
 
         # Renglón de Tolerancia
         tolerancia_row = tk.Frame(self.calibra_container)
