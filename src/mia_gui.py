@@ -16,9 +16,12 @@ class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Wong Instruments             MIA - Portal             Ver 5.6")
+        #self.root.state("zoomed") 
+        self.root.attributes("-fullscreen", True)
+        self.root.bind("<Escape>", lambda e: self.root.attributes("-fullscreen", False))
         
         # Carga y redimensiona la imagen del logo
-        original_logo = Image.open("src/wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
+        original_logo = Image.open("/home/lwong/mia_gui_5/src/wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
         resized_logo = original_logo.resize((60, 60))  # Cambia el tamaño a 100x100 píxeles
         self.logo = ImageTk.PhotoImage(resized_logo)  # Convertir a un formato compatible con Tkinter
         
