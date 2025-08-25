@@ -307,7 +307,8 @@ class MiaGui:
             activeforeground="black")
         self.connect_button.grid(row=0, column=2, padx=(10,20), sticky="nsew")
 
-        
+        self.titulo_label = tk.Label(sorteo_frame, text="Wong Instruments  /  MIA-Portal   Ver 5.6", font=("Arial", 12))
+        self.titulo_label.pack(side=tk.LEFT, padx=0, pady=(10,0), anchor="center")
         #######################################################################
         #
         #   Cuadro 2 (bascula_frame):  Despliegue de báscula: calibración y tiempo real de peso
