@@ -16,9 +16,7 @@ import os
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Portal             Ver 5.6")
-        #self.root.state("zoomed") 
-        #self.root.attributes("-fullscreen", True)
+        self.root.title("Wong Instruments             MIA - Portal             Ver 5.6") 
         self.root.bind("<Escape>", lambda e: self.root.attributes("-fullscreen", False))
         
         # Carga y redimensiona la imagen del logo
@@ -46,6 +44,8 @@ class MiaGui:
         self.sorteo.inicia_bascula()
         self.root.option_add('*TCombobox*Listbox.font', self.mesa_popdown_font)  # Aplica la fuente grande al Combobox de mesa
 
+        if self.portal.es_pi == False: 
+            self.root.attributes("-fullscreen", False)  # Pantalla completa solo en Raspberry Pi
 
     def create_widgets(self):
 
@@ -485,6 +485,9 @@ class MiaGui:
         # Función para apagar la Raspberry Pi
         def apagar_raspberry():
             if self.portal.es_pi == True:
+                if self.root.attributes("-fullscreen") == False:    # Regresa a moso Pantalla Completa
+                    self.root.attributes("-fullscreen", True)
+                    return
                 respuesta = messagebox.askyesno("Confirmación", "¿Estás seguro de que deseas apagar la Raspberry Pi?")
                 if respuesta:  # Si el usuario confirma
                     os.system("sudo shutdown now")
