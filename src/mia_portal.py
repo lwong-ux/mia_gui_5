@@ -28,8 +28,10 @@ NG_INDICE = 6   # Índice en el arreglo de cajitas para ng mix
 class ManejadorPortal:
     def __init__(self, sorteo):
         self.sorteo = sorteo
-
+        self.es_pi = False
+        
         if ES_RPI:
+            self.es_pi = True
             # Configuración de los GPIOs
             GPIO.cleanup()
             GPIO.setmode(GPIO.BCM)

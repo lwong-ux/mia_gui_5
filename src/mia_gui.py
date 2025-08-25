@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import PhotoImage
 import tkinter.font as tkfont
-from PIL import Image, ImageTk  
-from tkinter import scrolledtext
+from PIL import Image, ImageTk, ImageOps
+from tkinter import messagebox, scrolledtext
 from mia_websocket import WebSocketMia
 from mia_sorteo import ManejadorSorteo
 from mia_portal import ManejadorPortal
@@ -476,13 +476,20 @@ class MiaGui:
        
 
         # Carga y redimensiona la imagen del botón de apagado
-        boton_encendido_path = os.path.join(self.base_dir, "boton_encendido.png")
+        boton_encendido_path = os.path.join(self.base_dir, "boton_encendido_negro.png")
         boton_encendido_img = Image.open(boton_encendido_path).resize((32, 32))  # Ajusta el tamaño según sea necesario
+        # Invierte los colores de la imagen
+        #boton_encendido_img = ImageOps.invert(boton_encendido_img.convert("RGB"))
         self.boton_encendido = ImageTk.PhotoImage(boton_encendido_img)
 
         # Función para apagar la Raspberry Pi
         def apagar_raspberry():
-            os.system("sudo shutdown now")
+            if self.portal.es_pi == True:
+                respuesta = messagebox.askyesno("Confirmación", "¿Estás seguro de que deseas apagar la Raspberry Pi?")
+                if respuesta:  # Si el usuario confirma
+                    os.system("sudo shutdown now")
+            else:
+                self.root.destroy()  # Cierra la ventana principal
 
         # Botón de apagado
         boton_apagado = tk.Button(
@@ -490,8 +497,8 @@ class MiaGui:
             image=self.boton_encendido,
             command=apagar_raspberry,
             relief=tk.FLAT,
-            bg="black",
-            activebackground="black",
+            bg="white",
+            activebackground="white",
             borderwidth=0,
             cursor="hand2"
         )
