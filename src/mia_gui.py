@@ -10,6 +10,7 @@ from mia_portal import ManejadorPortal
 import asyncio
 import psutil
 import random
+import os
 
 
 class MiaGui:
@@ -17,11 +18,12 @@ class MiaGui:
         self.root = tk.Tk()
         self.root.title("Wong Instruments             MIA - Portal             Ver 5.6")
         #self.root.state("zoomed") 
-        self.root.attributes("-fullscreen", True)
+        #self.root.attributes("-fullscreen", True)
         self.root.bind("<Escape>", lambda e: self.root.attributes("-fullscreen", False))
         
         # Carga y redimensiona la imagen del logo
-        original_logo = Image.open("/home/lwong/mia_gui_5/src/wi_logo_1.png")  # Reemplaza con la ruta de tu imagen
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))  # Obtiene el directorio actual del archivo
+        original_logo = Image.open(os.path.join(self.base_dir, "wi_logo_1.png"))  # Reemplaza con la ruta de tu imagen
         resized_logo = original_logo.resize((60, 60))  # Cambia el tamaño a 100x100 píxeles
         self.logo = ImageTk.PhotoImage(resized_logo)  # Convertir a un formato compatible con Tkinter
         
@@ -473,6 +475,28 @@ class MiaGui:
         self.pieza_final_peso_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
        
 
+        # Carga y redimensiona la imagen del botón de apagado
+        boton_encendido_path = os.path.join(self.base_dir, "boton_encendido.png")
+        boton_encendido_img = Image.open(boton_encendido_path).resize((32, 32))  # Ajusta el tamaño según sea necesario
+        self.boton_encendido = ImageTk.PhotoImage(boton_encendido_img)
+
+        # Función para apagar la Raspberry Pi
+        def apagar_raspberry():
+            os.system("sudo shutdown now")
+
+        # Botón de apagado
+        boton_apagado = tk.Button(
+            self.root,
+            image=self.boton_encendido,
+            command=apagar_raspberry,
+            relief=tk.FLAT,
+            bg="black",
+            activebackground="black",
+            borderwidth=0,
+            cursor="hand2"
+        )
+        boton_apagado.place(x=10, y=10)  # Posiciona el botón en la esquina superior izquierda
+    
     # Tarea periódica para supervisar el estado de la conexión
     def supervisa_conexion(self):
         
