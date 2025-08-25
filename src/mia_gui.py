@@ -46,7 +46,9 @@ class MiaGui:
 
         if self.portal.es_pi == False: 
             self.root.attributes("-fullscreen", False)  # Pantalla completa solo en Raspberry Pi
-
+        else:
+            self.root.attributes("-fullscreen", True)  # Pantalla completa solo en Raspberry Pi
+    
     def create_widgets(self):
 
         # Contenedor principal main_frame: Cuadro 1 y Cuadro 2
