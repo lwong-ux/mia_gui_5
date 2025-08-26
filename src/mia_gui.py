@@ -54,7 +54,6 @@ class MiaGui:
             self.root.geometry(f"{ancho}x{alto}+0+0")  # Ajusta la ventana al tamaño de la pantalla
     
     def create_widgets(self):
-
         # Contenedor principal main_frame: Cuadro 1 y Cuadro 2
         main_frame = tk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -63,11 +62,11 @@ class MiaGui:
         #
         #   Cuadro 1 (sorteo_frame): tipo de sorteo, mul, cajas de sorteo OK/NG y comunicación
         #
-        # #####################################################################
-        sorteo_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        sorteo_frame.pack_propagate(True)  # No ajustar al contenido
-        sorteo_frame.pack(side=tk.LEFT,  anchor='n', pady=(20, 20), padx=(5,5))
-        
+        #######################################################################
+        sorteo_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2, height=520)
+        sorteo_frame.pack_propagate(False)  # Evita que el tamaño se ajuste al contenido
+        sorteo_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 5), pady=(20, 20))
+
         #
         # tipo_conteo_row: Conteo por IR o Conteo por Peso (Checkbuttons)
         #
@@ -317,8 +316,9 @@ class MiaGui:
         #   Cuadro 2 (bascula_frame):  Despliegue de báscula: calibración y tiempo real de peso
         #
         #######################################################################
-        bascula_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        bascula_frame.pack(side=tk.RIGHT,  expand=False, pady=(20, 20), padx=(5, 15))
+        bascula_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2, height=520)
+        bascula_frame.pack_propagate(False)  # Evita que el tamaño se ajuste al contenido
+        bascula_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(5, 15), pady=(20, 20))
 
         #
         # Sub-frame calibra_container: 
