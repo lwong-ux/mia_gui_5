@@ -44,15 +44,12 @@ class MiaGui:
         self.sorteo.inicia_bascula()
         self.root.option_add('*TCombobox*Listbox.font', self.mesa_popdown_font)  # Aplica la fuente grande al Combobox de mesa
 
+        #self.root.update_idletasks()  # Asegura que la ventana esté actualizada antes de obtener dimensiones    
         ancho = self.root.winfo_screenwidth()
         alto = self.root.winfo_screenheight()
-        if self.portal.es_pi == False: 
-            self.root.attributes("-fullscreen", False)  # Pantalla completa solo en Raspberry Pi
-           
-        else:
-            #self.root.attributes("-fullscreen", True)  # Pantalla completa solo en Raspberry Pi
-            self.root.geometry(f"{ancho}x{alto}+0+0")  # Ajusta la ventana al tamaño de la pantalla
-    
+        #if self.portal.es_pi: 
+         #    self.root.attributes("-fullscreen", True)  # Pantalla completa solo en Raspberry Pi
+        
     def create_widgets(self):
 
         # Contenedor principal main_frame: Cuadro 1 y Cuadro 2
@@ -67,7 +64,7 @@ class MiaGui:
         sorteo_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
         #sorteo_frame.config(width=420)  # Ancho fijo en píxeles
         sorteo_frame.pack_propagate(True)  # No ajustar al contenido
-        sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(20, 20), padx=(5,5))
+        sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(20, 20), padx=(20,20))
         
         #
         # tipo_conteo_row: Conteo por IR o Conteo por Peso (Checkbuttons)
@@ -197,7 +194,7 @@ class MiaGui:
         # conecta_button_row: Contenedor para los botones Desconecta, Mesa y Conecta 
         #
         conecta_button_row = tk.Frame(sorteo_frame)
-        conecta_button_row.pack(fill=tk.X, pady=(20, 0), anchor="center")
+        conecta_button_row.pack(fill=tk.X, pady=(20, 27), anchor="center")
         conecta_button_row.columnconfigure(0, weight=1)
         conecta_button_row.columnconfigure(1, weight=1)
         conecta_button_row.columnconfigure(2, weight=1)
@@ -460,9 +457,6 @@ class MiaGui:
         # Función para apagar la Raspberry Pi
         def apagar_raspberry():
             if self.portal.es_pi == True:
-                if self.root.attributes("-fullscreen") == False:    # Regresa a moso Pantalla Completa
-                    self.root.attributes("-fullscreen", True)
-                    return
                 respuesta = messagebox.askyesno("Confirmación", "¿Estás seguro de que deseas apagar la Raspberry Pi?")
                 if respuesta:  # Si el usuario confirma
                     os.system("sudo shutdown now")
