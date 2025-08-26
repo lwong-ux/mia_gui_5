@@ -44,10 +44,14 @@ class MiaGui:
         self.sorteo.inicia_bascula()
         self.root.option_add('*TCombobox*Listbox.font', self.mesa_popdown_font)  # Aplica la fuente grande al Combobox de mesa
 
+        ancho = self.root.winfo_screenwidth()
+        alto = self.root.winfo_screenheight()
         if self.portal.es_pi == False: 
             self.root.attributes("-fullscreen", False)  # Pantalla completa solo en Raspberry Pi
+           
         else:
-            self.root.attributes("-fullscreen", True)  # Pantalla completa solo en Raspberry Pi
+            #self.root.attributes("-fullscreen", True)  # Pantalla completa solo en Raspberry Pi
+            self.root.geometry(f"{ancho}x{alto}+0+0")  # Ajusta la ventana al tamaño de la pantalla
     
     def create_widgets(self):
 
@@ -63,7 +67,7 @@ class MiaGui:
         sorteo_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
         #sorteo_frame.config(width=420)  # Ancho fijo en píxeles
         sorteo_frame.pack_propagate(True)  # No ajustar al contenido
-        sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(6, 4), padx=(5,5))
+        sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(20, 20), padx=(5,5))
         
         #
         # tipo_conteo_row: Conteo por IR o Conteo por Peso (Checkbuttons)
@@ -174,7 +178,7 @@ class MiaGui:
         # signal_row: Contenedor para señal de conexión y URL (en una sola línea)
         #
         signal_row = tk.Frame(sorteo_frame)
-        signal_row.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(30, 0))
+        signal_row.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(20, 0))
 
         tk.Label(signal_row, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
         self.signal_canvas = tk.Canvas(signal_row, width=20, height=20, bg=sorteo_frame.cget("bg"), highlightthickness=0)
@@ -193,7 +197,7 @@ class MiaGui:
         # conecta_button_row: Contenedor para los botones Desconecta, Mesa y Conecta 
         #
         conecta_button_row = tk.Frame(sorteo_frame)
-        conecta_button_row.pack(fill=tk.X, pady=(30, 30), anchor="center")
+        conecta_button_row.pack(fill=tk.X, pady=(0, 0), anchor="center")
         conecta_button_row.columnconfigure(0, weight=1)
         conecta_button_row.columnconfigure(1, weight=1)
         conecta_button_row.columnconfigure(2, weight=1)
@@ -307,15 +311,15 @@ class MiaGui:
             activeforeground="black")
         self.connect_button.grid(row=0, column=2, padx=(10,20), sticky="nsew")
 
-        self.titulo_label = tk.Label(sorteo_frame, text="Wong Instruments  /  MIA-Portal   Ver 5.6", font=("Arial", 12))
-        self.titulo_label.pack(side=tk.LEFT, padx=0, pady=(10,0), anchor="center")
+        #self.titulo_label = tk.Label(sorteo_frame, text="Wong Instruments  /  MIA-Portal   Ver 5.6", font=("Arial", 12))
+        #self.titulo_label.pack(side=tk.LEFT, padx=0, pady=(10,0), anchor="center")
         #######################################################################
         #
         #   Cuadro 2 (bascula_frame):  Despliegue de báscula: calibración y tiempo real de peso
         #
         #######################################################################
         bascula_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        bascula_frame.pack(side=tk.RIGHT, fill=tk.Y, expand=False, pady=(6, 4), padx=(5, 15))
+        bascula_frame.pack(side=tk.RIGHT, fill=tk.Y, expand=False, pady=(20, 20), padx=(5, 15))
 
         #
         # Sub-frame calibra_container: 
