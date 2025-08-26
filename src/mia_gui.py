@@ -74,7 +74,7 @@ class MiaGui:
         self.tipo_conteo_ir = tk.BooleanVar(value=False)
         self.tipo_conteo_peso = tk.BooleanVar(value=False)
         tipo_conteo_row = tk.Frame(sorteo_frame, relief=tk.GROOVE, borderwidth=2)
-        tipo_conteo_row.pack(side=tk.TOP, pady=(10,0), anchor="center")
+        tipo_conteo_row.pack(side=tk.TOP, pady=(20,0), anchor="center")
         tk.Checkbutton(tipo_conteo_row, text="BARRERA", variable=self.tipo_conteo_ir, onvalue=True, offvalue=False, font=("Arial", 18)).pack(side=tk.LEFT, padx=(10,60))
         tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=True, offvalue=False, font=("Arial", 18)).pack(side=tk.LEFT, padx=(60,10))
 
@@ -171,7 +171,7 @@ class MiaGui:
         separador1 = tk.Frame(sorteo_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
         separador1.pack(fill=tk.X, padx=(5,5), pady=(5, 2))
         separador2 = tk.Frame(sorteo_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
-        separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 5))
+        separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 7))
 
         #
         # signal_row: Contenedor para señal de conexión y URL (en una sola línea)
@@ -196,7 +196,7 @@ class MiaGui:
         # conecta_button_row: Contenedor para los botones Desconecta, Mesa y Conecta 
         #
         conecta_button_row = tk.Frame(sorteo_frame)
-        conecta_button_row.pack(fill=tk.X, pady=(20, 20), anchor="center")
+        conecta_button_row.pack(fill=tk.X, pady=(10, 20), anchor="center")
         conecta_button_row.columnconfigure(0, weight=1)
         conecta_button_row.columnconfigure(1, weight=1)
         conecta_button_row.columnconfigure(2, weight=1)
