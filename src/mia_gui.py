@@ -54,6 +54,7 @@ class MiaGui:
             self.root.geometry(f"{ancho}x{alto}+0+0")  # Ajusta la ventana al tamaño de la pantalla
     
     def create_widgets(self):
+
         # Contenedor principal main_frame: Cuadro 1 y Cuadro 2
         main_frame = tk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -62,18 +63,19 @@ class MiaGui:
         #
         #   Cuadro 1 (sorteo_frame): tipo de sorteo, mul, cajas de sorteo OK/NG y comunicación
         #
-        #######################################################################
-        sorteo_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2, height=520)
-        sorteo_frame.pack_propagate(False)  # Evita que el tamaño se ajuste al contenido
-        sorteo_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 5), pady=(20, 20))
-
+        # #####################################################################
+        sorteo_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
+        #sorteo_frame.config(width=420)  # Ancho fijo en píxeles
+        sorteo_frame.pack_propagate(True)  # No ajustar al contenido
+        sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(20, 20), padx=(5,5))
+        
         #
         # tipo_conteo_row: Conteo por IR o Conteo por Peso (Checkbuttons)
         #
         self.tipo_conteo_ir = tk.BooleanVar(value=False)
         self.tipo_conteo_peso = tk.BooleanVar(value=False)
         tipo_conteo_row = tk.Frame(sorteo_frame, relief=tk.GROOVE, borderwidth=2)
-        tipo_conteo_row.pack(side=tk.TOP, pady=(20,0), anchor="center")
+        tipo_conteo_row.pack(side=tk.TOP, pady=(10,0), anchor="center")
         tk.Checkbutton(tipo_conteo_row, text="BARRERA", variable=self.tipo_conteo_ir, onvalue=True, offvalue=False, font=("Arial", 18)).pack(side=tk.LEFT, padx=(10,60))
         tk.Checkbutton(tipo_conteo_row, text="PESO", variable=self.tipo_conteo_peso, onvalue=True, offvalue=False, font=("Arial", 18)).pack(side=tk.LEFT, padx=(60,10))
 
@@ -170,13 +172,13 @@ class MiaGui:
         separador1 = tk.Frame(sorteo_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
         separador1.pack(fill=tk.X, padx=(5,5), pady=(5, 2))
         separador2 = tk.Frame(sorteo_frame, height=1, bd=1, relief=tk.GROOVE, bg="gray")
-        separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 7))
+        separador2.pack(fill=tk.X, padx=(10,10), pady=(0, 5))
 
         #
         # signal_row: Contenedor para señal de conexión y URL (en una sola línea)
         #
         signal_row = tk.Frame(sorteo_frame)
-        signal_row.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(30, 10))
+        signal_row.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(30, 0))
 
         tk.Label(signal_row, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
         self.signal_canvas = tk.Canvas(signal_row, width=20, height=20, bg=sorteo_frame.cget("bg"), highlightthickness=0)
@@ -195,7 +197,7 @@ class MiaGui:
         # conecta_button_row: Contenedor para los botones Desconecta, Mesa y Conecta 
         #
         conecta_button_row = tk.Frame(sorteo_frame)
-        conecta_button_row.pack(fill=tk.X, pady=(10, 20), anchor="center")
+        conecta_button_row.pack(fill=tk.X, pady=(20, 0), anchor="center")
         conecta_button_row.columnconfigure(0, weight=1)
         conecta_button_row.columnconfigure(1, weight=1)
         conecta_button_row.columnconfigure(2, weight=1)
@@ -316,9 +318,8 @@ class MiaGui:
         #   Cuadro 2 (bascula_frame):  Despliegue de báscula: calibración y tiempo real de peso
         #
         #######################################################################
-        bascula_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2, height=520)
-        bascula_frame.pack_propagate(False)  # Evita que el tamaño se ajuste al contenido
-        bascula_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(5, 15), pady=(20, 20))
+        bascula_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
+        bascula_frame.pack(side=tk.RIGHT, fill=tk.Y, expand=False, pady=(20, 20), padx=(5, 15))
 
         #
         # Sub-frame calibra_container: 
@@ -371,37 +372,7 @@ class MiaGui:
             font=("Arial", 16),
             command=self.toma_muestra_secuencial
         )
-        self.boton_toma_muestra.pack(side=tk.TOP, pady=(10,20))
-
-        # Peso 1
-        # peso_1_row = tk.Frame(self.calibra_container)
-        # peso_1_row.pack(side=tk.TOP,  anchor="center", pady=4)
-        # self.peso_1_label = tk.Label(peso_1_row, text="M1", font=("Arial", 14))
-        # self.peso_1_label.pack(side=tk.LEFT, padx=5)
-        # self.peso_1_entry = tk.Entry(peso_1_row, font=("Arial", 14), width=5)
-        # self.peso_1_entry.pack(side=tk.LEFT, padx=5)
-        # self.peso_1_btn = tk.Button(peso_1_row, text="Registra", font=("Arial", 16), command=self.lee_peso_1)
-        # self.peso_1_btn.pack(side=tk.LEFT, padx=5)
-
-        # Peso 2
-        # peso_2_row = tk.Frame(self.calibra_container)
-        # peso_2_row.pack(side=tk.TOP, anchor="center", pady=4)
-        # self.peso_2_label = tk.Label(peso_2_row, text="M2", font=("Arial", 14))
-        # self.peso_2_label.pack(side=tk.LEFT, padx=5)
-        # self.peso_2_entry = tk.Entry(peso_2_row, font=("Arial", 14), width=5)
-        # self.peso_2_entry.pack(side=tk.LEFT, padx=5)
-        # self.peso_2_btn = tk.Button(peso_2_row, text="Registra", font=("Arial", 16), command=self.lee_peso_2)
-        # self.peso_2_btn.pack(side=tk.LEFT, padx=5)
-
-        # Peso 3
-        # peso_3_row = tk.Frame(self.calibra_container)
-        # peso_3_row.pack(side=tk.TOP, anchor="center", pady=4)
-        # self.peso_3_label = tk.Label(peso_3_row, text="M3", font=("Arial", 14))
-        # self.peso_3_label.pack(side=tk.LEFT, padx=5)
-        # self.peso_3_entry = tk.Entry(peso_3_row, font=("Arial", 14), width=5)
-        # self.peso_3_entry.pack(side=tk.LEFT, padx=5)
-        # self.peso_3_btn = tk.Button(peso_3_row, text="Registra", font=("Arial", 16), command=self.lee_peso_3)
-        # self.peso_3_btn.pack(side=tk.LEFT, padx=5)
+        self.boton_toma_muestra.pack(side=tk.TOP, pady=(10,10))
 
         #
         # peso_container: Calibración de báscula y lecturas en vivo
@@ -448,12 +419,11 @@ class MiaGui:
         self.pieza_final_peso_entry.config(bg="white", fg="#1CA301")
         self.pieza_final_peso_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
        
-
         #
         # lectura_peso_ng_container: (NG) Lectura anterior, actual y pieza registrada
         #
         self.lectura_peso_ng_container = tk.Frame(self.peso_container, relief=tk.GROOVE, borderwidth=2)
-        self.lectura_peso_ng_container.pack(padx=(10,10), pady=(10,10), fill=tk.X)
+        self.lectura_peso_ng_container.pack(padx=(10,10), pady=(10,15), fill=tk.X)
         #
         # peso_row: Peso último y actual 
         #
@@ -480,7 +450,6 @@ class MiaGui:
         self.pieza_final_peso_ng_entry.config( fg="#FA0505")
         self.pieza_final_peso_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
        
-
         # Carga y redimensiona la imagen del botón de apagado
         boton_encendido_path = os.path.join(self.base_dir, "boton_encendido_negro.png")
         boton_encendido_img = Image.open(boton_encendido_path).resize((32, 32))  # Ajusta el tamaño según sea necesario
