@@ -65,9 +65,8 @@ class MiaGui:
         #
         # #####################################################################
         sorteo_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        #sorteo_frame.config(width=420)  # Ancho fijo en píxeles
         sorteo_frame.pack_propagate(True)  # No ajustar al contenido
-        sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(20, 20), padx=(5,5))
+        sorteo_frame.pack(side=tk.LEFT,  anchor='n', pady=(20, 20), padx=(5,5))
         
         #
         # tipo_conteo_row: Conteo por IR o Conteo por Peso (Checkbuttons)
@@ -178,7 +177,7 @@ class MiaGui:
         # signal_row: Contenedor para señal de conexión y URL (en una sola línea)
         #
         signal_row = tk.Frame(sorteo_frame)
-        signal_row.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(20, 0))
+        signal_row.pack(side=tk.TOP, anchor=tk.NW, padx=5, pady=(30, 10))
 
         tk.Label(signal_row, text="Conexión", font=("Arial", 12)).pack(side=tk.LEFT, padx=(0, 5))
         self.signal_canvas = tk.Canvas(signal_row, width=20, height=20, bg=sorteo_frame.cget("bg"), highlightthickness=0)
@@ -197,7 +196,7 @@ class MiaGui:
         # conecta_button_row: Contenedor para los botones Desconecta, Mesa y Conecta 
         #
         conecta_button_row = tk.Frame(sorteo_frame)
-        conecta_button_row.pack(fill=tk.X, pady=(0, 0), anchor="center")
+        conecta_button_row.pack(fill=tk.X, pady=(20, 20), anchor="center")
         conecta_button_row.columnconfigure(0, weight=1)
         conecta_button_row.columnconfigure(1, weight=1)
         conecta_button_row.columnconfigure(2, weight=1)
@@ -319,7 +318,7 @@ class MiaGui:
         #
         #######################################################################
         bascula_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
-        bascula_frame.pack(side=tk.RIGHT, fill=tk.Y, expand=False, pady=(20, 20), padx=(5, 15))
+        bascula_frame.pack(side=tk.RIGHT,  expand=False, pady=(20, 20), padx=(5, 15))
 
         #
         # Sub-frame calibra_container: 
