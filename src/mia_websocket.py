@@ -5,7 +5,7 @@ import json
 import time
 
 # URL del servidor Rails SysQB en la Mac / ruta del WebSocket (Action Cable) declarada en config/environments/development.rb
-URL_MEZTLI = "ws://192.168.100.25:3000/cable" 
+URL_MEZTLI = "ws://192.168.100.20:3000/cable" 
 URL_SIMULADOR = "ws://shielded-taiga-04156.herokuapp.com/cable"
 
 class WebSocketMia:
@@ -160,7 +160,7 @@ class WebSocketMia:
         """
         if url == "LOCAL":
             return URL_MEZTLI
-        elif url == "RAILS Simula":
+        elif url == "SIMULA":
             return URL_SIMULADOR
-        elif url == "RAILS QB":
+        elif url == "QB":
             return "URL_MEZTLI"  # Aquí se agrega la URL específica para RAILS QB
