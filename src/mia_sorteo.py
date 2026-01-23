@@ -3,13 +3,17 @@ import threading
 import time
 import random
 import hid  # 
+import serial
+import re
+import sys
+       
 
 class ManejadorSorteo:
     def __init__(self, gui):
         self.gui = gui
         self.loop = asyncio.get_event_loop()
         # Inicializa los contadores de las cajitas de sorteo
-        self.contadores_cajitas = [0] * 2           # OK, NG-MIX
+        self.contadores_cajitas = [0] * 3           # OK, NG-MIX, num_pieza, peso_anterior
         self.estado_botones_inci = [False] * 5      # Estado de los botones de incidentes
         self.multiplicador = 1                      # Multiplicador de piezas: 1, 10, 100
         self.pieza_numero = 1
@@ -22,13 +26,21 @@ class ManejadorSorteo:
         self.contador_ok = 0
         self.contador_ng = 0
         self.contador_activo = False
+        
+        # Pila para guardar el estado de los contadores
+        self.stack_contadores = []
 
         # Variables de la báscula
         self.peso_bascula = 0.0
         self.peso_anterior = 0.0
         self.peso_actual = 0.0
         self.tara = 0.0  # Tara de la báscula
-    
+        self.ser = None  # Puerto serial de la báscula
+        
+        # Agregar la inicialización de la variable self.peso_ultimo en el constructor de la clase ManejadorSorteo
+        #self.peso_ultimo = 0.0
+       
+        
     # Respuesta al botón INIC: limpia contadores
     def inicia_conteo(self):
         #self.inicia_folio()
@@ -49,7 +61,7 @@ class ManejadorSorteo:
         self.contador_ok = 0
         self.contador_ng = 0
         self.pieza_numero = 1
-        self.contadores_cajitas = [0] * 2  # OK, NG-MIX
+        self.contadores_cajitas = [0] * 3  # OK, NG-MIX, num_pieza, peso_anterior
         self.gui.limpia_cajitas()
         self.peso_anterior = 0.0
         self.peso_actual = 0.0
@@ -107,8 +119,26 @@ class ManejadorSorteo:
 
     def lee_ng(self):
         return self.contador_ng
+    
+    def push_contadores(self):
+        # Guarda el estado actual de los contadores en la pila
+        self.stack_contadores.append(self.contadores_cajitas.copy())
+
+    def pop_contadores(self):
+        # Restaura el estado anterior de los contadores desde la pila
+        if self.stack_contadores:
+            self.contadores_cajitas = self.stack_contadores.pop()
+            self.pieza_numero = self.contadores_cajitas[2]
+            #self.peso_anterior = self.contadores_cajitas[3]
+            for idx in range(2):
+                self.gui.actualiza_cajitas(self.pieza_numero, self.peso_anterior, idx)  # Llama a actualiza_cajitas para reflejar el cambio
+        else:
+            print("La pila de contadores está vacía. No se puede realizar pop.")
 
     def incrementa_contador(self, idx, piezas):
+        self.contadores_cajitas[2] = self.pieza_numero
+        #self.contadores_cajitas[3] = self.peso_anterior
+        self.push_contadores()  # Guarda el estado actual antes de modificarlo
         if self.gui.tipo_conteo_peso.get():
             self.multiplicador = piezas
         else:
@@ -126,7 +156,7 @@ class ManejadorSorteo:
             self.loop
         )
         self.pieza_numero += self.multiplicador
-        self.gui.actualiza_cajitas(self.pieza_numero, idx)
+        self.gui.actualiza_cajitas(self.pieza_numero, self.peso_anterior, idx)
 
     # Función del protocolo MIA-Proper 1.0: Envía el comando 'PIEZA_INSPEC'
     async def _pieza_inspeccionada(self, pieza, idx, ok, ng):
@@ -163,23 +193,42 @@ class ManejadorSorteo:
     # 
     #############################################################
     def inicia_bascula(self):
-        self.sorteo_activo = True
-        def loop_muestreo():
-            while self.sorteo_activo:
-                self.muestrea_bascula()
-                time.sleep(0.5)
-                   
-        self.hilo_bascula = threading.Thread(target=loop_muestreo, daemon=True)
-        self.hilo_bascula.start()
+        PORT = "/dev/cu.usbserial-210"
+        BAUD = 9600 
 
+        # Verifica si el puerto ya está abierto
+        if self.ser and self.ser.is_open:
+            print("El puerto serial ya está abierto.")
+            return
+        # Inicializa el puerto serial e inicia el hilo de muestreo
+        try:
+            self.ser = serial.Serial(PORT, BAUD, timeout=0.1)  # Reducir el timeout para lecturas más rápidas
+            print("Puerto serial de báscula abierto en: ", PORT)
+            self.sorteo_activo = True
+
+            # Inicia el hilo para muestrear la báscula: loop_muestreo()
+            self.hilo_bascula = threading.Thread(target=self.loop_muestreo, daemon=True)
+            self.hilo_bascula.start()
+        #
+        except serial.SerialException as e:
+            print("Error al abrir el puerto serial:", e)
+            self.ser = None
+
+    def loop_muestreo(self):
+        while self.sorteo_activo:
+            try:
+                self.muestrea_bascula()
+            except Exception as e:
+                print("Error en el hilo de muestreo de la báscula:", e)
+    # 
+    # Función de muestro continuo de la báscula y detección de nuevas piezas por peso
     def muestrea_bascula(self):
-        self.gui.apaga_peso_actual()
-        time.sleep(0.5)
         self.peso_bascula = self.lee_bascula()
-        if self.peso_bascula < 0.0:  
+        if self.peso_bascula == None: 
+            # La báscula está apagada o no se pudo leer. Parpadea el indicador en la GUI. 
             self.tara = self.peso_anterior
             self.gui.despliega_bascula_apagada(True)
-            time.sleep(0.75)
+            time.sleep(1.0)
             self.gui.despliega_bascula_apagada(False)
             return
         else:
@@ -189,7 +238,7 @@ class ManejadorSorteo:
         self.gui.despliega_titulo_peso()
         if self.gui.tipo_conteo_peso.get() == False:
             return
-
+        
         es_valido, piezas = self.es_nueva_pieza_por_peso(self.peso_anterior, self.peso_bascula)
         if es_valido:  
             print(f"Peso válido: {self.peso_bascula} kg, Piezas estimadas: {piezas}")  
@@ -199,6 +248,8 @@ class ManejadorSorteo:
             self.peso_anterior = self.peso_bascula
             self.gui.actualiza_pesos(self.peso_anterior, self.peso_bascula, piezas)
             time.sleep(2.0)
+            self.gui.actualiza_pieza_registrada(piezas)
+            self.gui.borra_pieza_final()
             self.gui.portal.apaga_led_ok()
 
     def es_nueva_pieza_por_peso(self, anterior, actual):
@@ -246,6 +297,34 @@ class ManejadorSorteo:
             print("Error al leer la báscula:", e)
             return self.peso_actual
         
+    def lee_bascula_serie_ok(self):
+        try:
+            linea = self.ser.readline().decode(errors="ignore").strip()
+            if linea:
+                # Captura signo opcional (+/-) aunque haya espacios entre el signo y el número
+                coincidencias = re.search(r"([+-])?\s*(\d+(?:\.\d+)?)", linea)
+                if coincidencias:
+                    signo = coincidencias.group(1) or "+"
+                    numero = coincidencias.group(2)
+                    peso = round(float(f"{signo}{numero}"), 1)
+                    # Escribe en la misma línea y fuerza el flush
+                    sys.stdout.write(f"\rLínea de entrada: {linea.strip()} // Peso detectado: {peso:+6.1f}g //  ")
+                    sys.stdout.flush()
+                    return peso 
+                else:
+                    print("No se recibió dato válido")
+                    return self.peso_actual
+            else:
+                print("Línea vacía recibida, posiblemente la báscula está apagada.")
+                return -1.0
+
+        except serial.SerialException as e:
+            print("Error del puerto serial:", e)
+            return None  # Valor de error, no se pudo leer la báscula
+        except Exception as e:
+            print("Error en lee_bascula_serie_ok:", e)
+            return None
+
     def lee_bascula(self):
         num_lecturas_max = 10  # Número máximo de lecturas consecutivas
         umbral_estabilidad = 2.0  # Diferencia máxima permitida entre lecturas (en gramos)
@@ -256,9 +335,11 @@ class ManejadorSorteo:
 
         for _ in range(num_lecturas_max):
             try:
-                peso = self.lee_bascula_ok()  # Llama al método que realiza una lectura de la báscula
+                peso = self.lee_bascula_serie_ok()  # Llama al método que realiza una lectura de la báscula
+                if peso == None:
+                    return None # Indica que la báscula está apagada o hubo un error
+                
                 lecturas.append(peso)
-
                 # Si hay lecturas previas, compara con la última
                 if len(lecturas) > 1:
                     diferencia = abs(lecturas[-1] - lecturas[-2])
@@ -272,13 +353,13 @@ class ManejadorSorteo:
                     return round(sum(lecturas[-lecturas_consecutivas_estables:]) / lecturas_consecutivas_estables, 1)
 
             except Exception as e:
-                print("Error leyendo báscula:", e)
+                print("Error en lee_bascula:", e)
                 return 0.0  # Regresa un valor predeterminado en caso de error
 
             time.sleep(0.1)  # Pausa breve entre lecturas para evitar lecturas rápidas consecutivas
 
         # Si no se alcanzó estabilidad después del número máximo de lecturas, regresa un valor predeterminado
-        print("Lectura inestable después de", num_lecturas_max, "lecturas:", lecturas)
+        print("\nLectura inestable después de", num_lecturas_max, "lecturas:", lecturas)
         return 0.0
 
     def lee_bascula_simula(self):

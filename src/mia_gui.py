@@ -99,8 +99,7 @@ class MiaGui:
 
         # Función de respuesta (callback) para el tacto de las cajitas de sorteo
         def make_incrementa_callback(idx):
-            return lambda event: self.sorteo.incrementa_contador(idx,0)
-        
+            return lambda event: self.sorteo.incrementa_contador(idx,0) 
         #
         # pza_ok_container: Etiqueta, cajita y contador para "Piezas OK"
         #
@@ -344,32 +343,58 @@ class MiaGui:
         self.tolerancia_menu.current(3)  # Selecciona el valor por omisión (10%)
         self.tolerancia_menu.pack(side=tk.LEFT, padx=0)
         self.tolerancia_menu.bind("<<ComboboxSelected>>", limpia_enfoque_combobox)
+        #
+        # Renglón para seleccionar la cantidad de muestras para calibración (RadioButtons interconectados)
+        # Para consultar el RadioButton seleccionado: self.muestras_var.get()  => 10 / 20 / 50
+        #
+        self.muestras_var = tk.IntVar(value=10)  # valor por omisión
+        muestras_row = tk.Frame(self.calibra_container)
+        muestras_row.pack(side=tk.TOP, anchor="center", pady=(5, 5))
 
-        # Renglón para los tres Entry y sus etiquetas
-        peso_row = tk.Frame(self.calibra_container)
-        peso_row.pack(side=tk.TOP, anchor="center", pady=10)
+        tk.Label(muestras_row, text="Muestras", font=("Arial", 14)).pack(side=tk.LEFT, padx=(0, 10))
+        rb_10 = tk.Radiobutton(muestras_row, text="10M", variable=self.muestras_var, value=10, font=("Arial", 14))
+        rb_20 = tk.Radiobutton(muestras_row, text="20M", variable=self.muestras_var, value=20, font=("Arial", 14))
+        rb_50 = tk.Radiobutton(muestras_row, text="50M", variable=self.muestras_var, value=50, font=("Arial", 14))
+        rb_10.pack(side=tk.LEFT, padx=10)
+        rb_20.pack(side=tk.LEFT, padx=10)
+        rb_50.pack(side=tk.LEFT, padx=10)
 
-        self.peso_labels = []
-        self.peso_entries = []
-
-        for i in range(1, 4):  # Itera para M1, M2, M3
-            label = tk.Label(peso_row, text=f"M{i}", font=("Arial", 14))
-            label.pack(side=tk.LEFT, padx=0)
-            self.peso_labels.append(label)
-
-            entry = tk.Entry(peso_row, font=("Arial", 14), width=5)
-            entry.pack(side=tk.LEFT, padx=(0,10))
-            self.peso_entries.append(entry)
-
-        # Renglón para el botón de toma de muestras secuenciales
-        self.muestra_actual = 0  # Índice de la muestra actual (0 para M1, 1 para M2, etc.)
+        # Renglón para el botón de toma de muestra de calibración
         self.boton_toma_muestra = tk.Button(
             self.calibra_container,
-            text=f"MUESTRA {self.muestra_actual + 1}",
+            text="CALIBRA",
             font=("Arial", 16),
-            command=self.toma_muestra_secuencial
+            command=self.toma_muestra_calibracion
         )
         self.boton_toma_muestra.pack(side=tk.TOP, pady=(10,10))
+
+        # 
+        # Renglón para los tres Entry y sus etiquetas
+        # peso_row = tk.Frame(self.calibra_container)
+        # peso_row.pack(side=tk.TOP, anchor="center", pady=10)
+
+        # self.peso_labels = []
+        # self.peso_entries = []
+
+        # for i in range(1, 4):  # Itera para M1, M2, M3
+        #     label = tk.Label(peso_row, text=f"M{i}", font=("Arial", 14))
+        #     label.pack(side=tk.LEFT, padx=0)
+        #     self.peso_labels.append(label)
+
+        #     entry = tk.Entry(peso_row, font=("Arial", 14), width=5)
+        #     entry.pack(side=tk.LEFT, padx=(0,10))
+        #     self.peso_entries.append(entry)
+
+        # Renglón para el botón de toma de muestras secuenciales
+        # self.muestra_actual = 0  # Índice de la muestra actual (0 para M1, 1 para M2, etc.)
+        # self.boton_toma_muestra = tk.Button(
+        #     self.calibra_container,
+        #     text=f"MUESTRA {self.muestra_actual + 1}",
+        #     font=("Arial", 16),
+        #     #command=self.toma_muestra_secuencial
+        #     command=self.toma_muestra_calibracion
+        # )
+        # self.boton_toma_muestra.pack(side=tk.TOP, pady=(10,10))
 
         #
         # peso_container: Calibración de báscula y lecturas en vivo
@@ -391,7 +416,7 @@ class MiaGui:
         self.lectura_peso_container = tk.Frame(self.peso_container, relief=tk.GROOVE, borderwidth=2)
         self.lectura_peso_container.pack(padx=(10,10), pady=(10,10), fill=tk.X)
         #
-        # peso_row: Peso último y actual 
+        # peso_row: Peso último y actual OK
         #
         peso_row = tk.Frame(self.lectura_peso_container)
         peso_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(5,0))
@@ -405,9 +430,17 @@ class MiaGui:
         self.peso_actual_entry = tk.Entry(peso_row, font=("Arial", 14), width=6)
         self.peso_actual_entry.pack(side=tk.LEFT, padx=2)
         self.peso_actual_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
-       
+        #
+        # Contenedor para última pieza registrada, etiqueta y pieza detectada (OK)
+        #
         pieza_final_container = tk.Frame(self.lectura_peso_container)
         pieza_final_container.pack(pady=(5, 5), fill=tk.X, anchor='n')
+        # Última pieza registrada OK
+        self.pieza_registrada_entry = tk.Entry(pieza_final_container, font=("Arial", 16), width=6)
+        self.pieza_registrada_entry.pack(side=tk.LEFT, padx=5)
+        self.pieza_registrada_entry.config(bg="white", fg="#1CA301")
+        self.pieza_registrada_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        # Etiqueta y pieza detectada OK
         self.pieza_final_label = tk.Label(pieza_final_container, text="PZAS OK", font=("Arial", 20))
         self.pieza_final_label.pack(side=tk.LEFT, padx=(10,0))
         self.pieza_final_label.config( fg="#1CA301")
@@ -415,14 +448,13 @@ class MiaGui:
         self.pieza_final_peso_entry.pack(side=tk.LEFT, padx=5)
         self.pieza_final_peso_entry.config(bg="white", fg="#1CA301")
         self.pieza_final_peso_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
-       
         #
         # lectura_peso_ng_container: (NG) Lectura anterior, actual y pieza registrada
         #
         self.lectura_peso_ng_container = tk.Frame(self.peso_container, relief=tk.GROOVE, borderwidth=2)
         self.lectura_peso_ng_container.pack(padx=(10,10), pady=(10,15), fill=tk.X)
         #
-        # peso_row: Peso último y actual 
+        # peso_row: Peso último y actual NG
         #
         peso_ng_row = tk.Frame(self.lectura_peso_ng_container)
         peso_ng_row.pack(side=tk.TOP, anchor="w", fill=tk.X, pady=(5,0))
@@ -436,9 +468,17 @@ class MiaGui:
         self.peso_actual_ng_entry = tk.Entry(peso_ng_row, font=("Arial", 14), width=6)
         self.peso_actual_ng_entry.pack(side=tk.LEFT, padx=2)
         self.peso_actual_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
-       
+        #
+        # Contenedor para última pieza registrada, etiqueta y pieza detectada (NG)
+        #
         pieza_final_ng_container = tk.Frame(self.lectura_peso_ng_container)
         pieza_final_ng_container.pack(pady=(5, 5), fill=tk.X, anchor='n')
+        # Última pieza registrada NG
+        self.pieza_final_peso_ng_entry = tk.Entry(pieza_final_ng_container, font=("Arial", 16), width=6)
+        self.pieza_final_peso_ng_entry.pack(side=tk.LEFT, padx=5)
+        self.pieza_final_peso_ng_entry.config( fg="#FA0505")
+        self.pieza_final_peso_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        # Etiqueta y pieza detectada NG
         self.pieza_final_ng_label = tk.Label(pieza_final_ng_container, text="PZAS NG", font=("Arial", 20))
         self.pieza_final_ng_label.pack(side=tk.LEFT, padx=(10,0))
         self.pieza_final_ng_label.config( fg="#FA0505")
@@ -508,20 +548,22 @@ class MiaGui:
         return False
 
     # Actualiza la cajita de PIEZA No. y la cajita de sorteo accionada
-    def actualiza_cajitas(self, pieza_numero, idx):
+    def actualiza_cajitas(self, pieza_numero, peso_ultimo, idx):
         entrys = [
             self.pza_ok_entry,
-            # self.pza_ng_entry,
-            # self.pza_ng_entry_2,
-            # self.pza_ng_entry_3,
-            # self.pza_ng_entry_4,
-            # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
+        # Actualiza la cajita de PIEZA No.
         self.pieza_entry.config(state="normal")  # Habilita temporalmente
         self.pieza_entry.delete(0, tk.END)
         self.pieza_entry.insert(0, f"{pieza_numero:>6}")
         self.pieza_entry.config(state="disabled")  # deshabilita temporalmente
+        # Actualiza la cajita de peso último
+        # self.peso_ultimo_entry.config(state="normal")  # Habilita temporalmente
+        # self.peso_ultimo_entry.delete(0, tk.END)
+        # self.peso_ultimo_entry.insert(0, f"{peso_ultimo:>6.1}")
+        # self.peso_iltimo_entry.config(state="disabled")  # deshabilita temporalmente
+        # Actualiza la cajita del sorteo
         entrys[idx].delete(0, 'end')
         entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
 
@@ -661,33 +703,42 @@ class MiaGui:
         self.peso_3_entry.insert(0, str(valor))
         self.actualiza_promedio_peso()
 
+    def toma_muestra_calibracion(self):
+        muestras = float(self.muestras_var.get())
+        peso = self.sorteo.peso_bascula  # Obtiene el peso de la báscula
+        promedio = round( peso/muestras , 2)
+        # Actualiza el Entry del promedio
+        self.peso_promedio_entry.delete(0, tk.END)
+        self.peso_promedio_entry.insert(0, f"{promedio:.2f}")
+        return
+    
     # Función para tomar muestras secuenciales
-    def toma_muestra_secuencial(self):
-        try:
-            peso = self.sorteo.peso_bascula  # Obtiene el peso de la báscula
-            self.peso_entries[self.muestra_actual].delete(0, tk.END)
-            self.peso_entries[self.muestra_actual].insert(0, f"{str(peso):>5}")
+    # def toma_muestra_secuencial(self):
+    #     try:
+    #         peso = self.sorteo.peso_bascula  # Obtiene el peso de la báscula
+    #         self.peso_entries[self.muestra_actual].delete(0, tk.END)
+    #         self.peso_entries[self.muestra_actual].insert(0, f"{str(peso):>5}")
 
-            # Actualiza el índice de la muestra actual
-            self.muestra_actual = (self.muestra_actual + 1) % 3  # Recorre en círculos (0, 1, 2)
+    #         # Actualiza el índice de la muestra actual
+    #         self.muestra_actual = (self.muestra_actual + 1) % 3  # Recorre en círculos (0, 1, 2)
 
-            # Actualiza el texto del botón
-            self.boton_toma_muestra.config(text=f"MUESTRA {self.muestra_actual + 1}")
+    #         # Actualiza el texto del botón
+    #         self.boton_toma_muestra.config(text=f"MUESTRA {self.muestra_actual + 1}")
 
-            # Actualiza el promedio de peso
-            self.actualiza_promedio_peso()
-        except ValueError:
-            pass
+    #         # Actualiza el promedio de peso
+    #         self.actualiza_promedio_peso()
+    #     except ValueError:
+    #         pass
 
     def actualiza_promedio_peso(self):
         try:
             # Obtiene los valores de los Entry en self.peso_entries
             pesos = [float(entry.get()) for entry in self.peso_entries]
             # Calcula el promedio
-            promedio = round(sum(pesos) / len(pesos), 1)
+            promedio = round(sum(pesos) / len(pesos), 2)
             # Actualiza el Entry del promedio
             self.peso_promedio_entry.delete(0, tk.END)
-            self.peso_promedio_entry.insert(0, f"{str(promedio):>5}")
+            self.peso_promedio_entry.insert(0, f"{promedio:.2f}")
         except ValueError:
             pass  # Ignora errores si algún Entry está vacío o tiene un valor inválido
 
@@ -698,6 +749,14 @@ class MiaGui:
         self.peso_actual_entry.insert(0, f"{str(actual):>8}")
         self.pieza_final_peso_entry.delete(0, tk.END)
         self.pieza_final_peso_entry.insert(0, f"{str(peso_pieza):>8}") 
+
+    def borra_pieza_final(self):
+        self.pieza_final_peso_entry.delete(0, tk.END)
+        self.pieza_final_peso_entry.insert(0, f"{str(0):>8}")   
+
+    def actualiza_pieza_registrada(self, piezas):
+        self.pieza_registrada_entry.delete(0, tk.END)
+        self.pieza_registrada_entry.insert(0, f"{str(piezas):>6}")  
 
     def despliega_peso_actual(self, peso_actual):
         self.peso_actual_entry.delete(0, tk.END)
