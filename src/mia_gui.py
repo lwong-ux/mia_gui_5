@@ -16,7 +16,7 @@ import os
 class MiaGui:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA - Portal             Ver 5.6") 
+        self.root.title("Wong Instruments             MIA5             Ver 5.7") 
         self.root.bind("<Escape>", lambda e: self.root.attributes("-fullscreen", False))
         
         # Carga y redimensiona la imagen del logo
