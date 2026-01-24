@@ -13,7 +13,7 @@ class ManejadorSorteo:
         self.gui = gui
         self.loop = asyncio.get_event_loop()
         # Inicializa los contadores de las cajitas de sorteo
-        self.contadores_cajitas = [0] * 3           # OK, NG-MIX, num_pieza, peso_anterior
+        self.contadores_cajitas = [0] * 4           # OK, NG-MIX, num_pieza, peso_anterior
         self.estado_botones_inci = [False] * 5      # Estado de los botones de incidentes
         self.multiplicador = 1                      # Multiplicador de piezas: 1, 10, 100
         self.pieza_numero = 1
@@ -61,7 +61,7 @@ class ManejadorSorteo:
         self.contador_ok = 0
         self.contador_ng = 0
         self.pieza_numero = 1
-        self.contadores_cajitas = [0] * 3  # OK, NG-MIX, num_pieza, peso_anterior
+        self.contadores_cajitas = [0] * 4  # OK, NG-MIX, num_pieza, peso_anterior
         self.gui.limpia_cajitas()
         self.peso_anterior = 0.0
         self.peso_actual = 0.0
@@ -129,7 +129,7 @@ class ManejadorSorteo:
         if self.stack_contadores:
             self.contadores_cajitas = self.stack_contadores.pop()
             self.pieza_numero = self.contadores_cajitas[2]
-            #self.peso_anterior = self.contadores_cajitas[3]
+            self.peso_anterior = self.contadores_cajitas[3]
             for idx in range(2):
                 self.gui.actualiza_cajitas(self.pieza_numero, self.peso_anterior, idx)  # Llama a actualiza_cajitas para reflejar el cambio
         else:
@@ -137,7 +137,7 @@ class ManejadorSorteo:
 
     def incrementa_contador(self, idx, piezas):
         self.contadores_cajitas[2] = self.pieza_numero
-        #self.contadores_cajitas[3] = self.peso_anterior
+        self.contadores_cajitas[3] = self.peso_anterior
         self.push_contadores()  # Guarda el estado actual antes de modificarlo
         if self.gui.tipo_conteo_peso.get():
             self.multiplicador = piezas
@@ -228,7 +228,7 @@ class ManejadorSorteo:
             # La báscula está apagada o no se pudo leer. Parpadea el indicador en la GUI. 
             self.tara = self.peso_anterior
             self.gui.despliega_bascula_apagada(True)
-            time.sleep(1.0)
+            time.sleep(1.0) # Tiempo de parpadeo de báscula apagada
             self.gui.despliega_bascula_apagada(False)
             return
         else:
@@ -246,8 +246,9 @@ class ManejadorSorteo:
             self.incrementa_contador(0, piezas)
             peso_pieza = round(self.peso_bascula - self.peso_anterior, 1)
             self.peso_anterior = self.peso_bascula
-            self.gui.actualiza_pesos(self.peso_anterior, self.peso_bascula, piezas)
-            time.sleep(2.0)
+            self.gui.actualiza_pesos(self.peso_bascula, piezas)
+            time.sleep(3.0) # Después de pieza válida, espera un poco antes de apagar el LED y actualizar la GUI
+            self.gui.actualiza_peso_anterior(self.peso_anterior)
             self.gui.actualiza_pieza_registrada(piezas)
             self.gui.borra_pieza_final()
             self.gui.portal.apaga_led_ok()
@@ -356,7 +357,7 @@ class ManejadorSorteo:
                 print("Error en lee_bascula:", e)
                 return 0.0  # Regresa un valor predeterminado en caso de error
 
-            time.sleep(0.1)  # Pausa breve entre lecturas para evitar lecturas rápidas consecutivas
+            #time.sleep(0.1)  # Pausa breve entre lecturas para evitar lecturas rápidas consecutivas
 
         # Si no se alcanzó estabilidad después del número máximo de lecturas, regresa un valor predeterminado
         print("\nLectura inestable después de", num_lecturas_max, "lecturas:", lecturas)

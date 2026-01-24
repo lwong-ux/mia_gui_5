@@ -548,7 +548,7 @@ class MiaGui:
         return False
 
     # Actualiza la cajita de PIEZA No. y la cajita de sorteo accionada
-    def actualiza_cajitas(self, pieza_numero, peso_ultimo, idx):
+    def actualiza_cajitas(self, pieza_numero, peso_anterior, idx):
         entrys = [
             self.pza_ok_entry,
             self.pza_ng_entry_mix
@@ -558,11 +558,11 @@ class MiaGui:
         self.pieza_entry.delete(0, tk.END)
         self.pieza_entry.insert(0, f"{pieza_numero:>6}")
         self.pieza_entry.config(state="disabled")  # deshabilita temporalmente
-        # Actualiza la cajita de peso último
-        # self.peso_ultimo_entry.config(state="normal")  # Habilita temporalmente
-        # self.peso_ultimo_entry.delete(0, tk.END)
-        # self.peso_ultimo_entry.insert(0, f"{peso_ultimo:>6.1}")
-        # self.peso_iltimo_entry.config(state="disabled")  # deshabilita temporalmente
+        # Actualiza la cajita de peso anterior
+        self.peso_ultimo_entry.config(state="normal")  # Habilita temporalmente
+        self.peso_ultimo_entry.delete(0, tk.END)
+        self.peso_ultimo_entry.insert(0, f"{peso_anterior:>6.1f}")
+        #self.peso_ultimo_entry.config(state="disabled")  # deshabilita temporalmente
         # Actualiza la cajita del sorteo
         entrys[idx].delete(0, 'end')
         entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
@@ -742,13 +742,15 @@ class MiaGui:
         except ValueError:
             pass  # Ignora errores si algún Entry está vacío o tiene un valor inválido
 
-    def actualiza_pesos(self, anterior, actual, peso_pieza):
-        self.peso_ultimo_entry.delete(0, tk.END)
-        self.peso_ultimo_entry.insert(0, f"{str(anterior):>8}")
+    def actualiza_pesos(self, actual, peso_pieza):
         self.peso_actual_entry.delete(0, tk.END)
         self.peso_actual_entry.insert(0, f"{str(actual):>8}")
         self.pieza_final_peso_entry.delete(0, tk.END)
         self.pieza_final_peso_entry.insert(0, f"{str(peso_pieza):>8}") 
+
+    def actualiza_peso_anterior(self, anterior):
+        self.peso_ultimo_entry.delete(0, tk.END)
+        self.peso_ultimo_entry.insert(0, f"{anterior:>6.1f}") 
 
     def borra_pieza_final(self):
         self.pieza_final_peso_entry.delete(0, tk.END)
