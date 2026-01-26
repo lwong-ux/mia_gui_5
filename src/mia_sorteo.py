@@ -6,11 +6,11 @@ import hid  #
 import serial
 import re
 import sys
-       
 
 class ManejadorSorteo:
-    def __init__(self, gui):
+    def __init__(self, gui, es_rpi):
         self.gui = gui
+        self.es_rpi = es_rpi
         self.loop = asyncio.get_event_loop()
         # Inicializa los contadores de las cajitas de sorteo
         self.contadores_cajitas = [0] * 4           # OK, NG-MIX, num_pieza, peso_anterior
@@ -36,11 +36,8 @@ class ManejadorSorteo:
         self.peso_actual = 0.0
         self.tara = 0.0  # Tara de la báscula
         self.ser = None  # Puerto serial de la báscula
-        
-        # Agregar la inicialización de la variable self.peso_ultimo en el constructor de la clase ManejadorSorteo
-        #self.peso_ultimo = 0.0
+    
        
-        
     # Respuesta al botón INIC: limpia contadores
     def inicia_conteo(self):
         #self.inicia_folio()
@@ -193,7 +190,10 @@ class ManejadorSorteo:
     # 
     #############################################################
     def inicia_bascula(self):
-        PORT = "/dev/cu.usbserial-210"
+        if self.es_rpi:
+            PORT = "/dev/ttyUSB0"
+        else:
+            PORT = "/dev/cu.usbserial-210"
         BAUD = 9600 
 
         # Verifica si el puerto ya está abierto

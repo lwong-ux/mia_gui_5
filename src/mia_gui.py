@@ -13,8 +13,20 @@ import random
 import os
 
 
+# Mover la detección de Raspberry Pi a mia_gui.py
+def es_raspberry_pi():
+    try:
+        with open('/proc/cpuinfo', 'r') as f:
+            cpuinfo = f.read()
+        return 'Raspberry' in cpuinfo or 'BCM' in cpuinfo
+    except Exception:
+        return False
+
 class MiaGui:
     def __init__(self):
+        # Detectar si es Raspberry Pi
+        self.ES_RPI = es_raspberry_pi()
+
         self.root = tk.Tk()
         self.root.title("Wong Instruments             MIA5             Ver 5.7") 
         self.root.bind("<Escape>", lambda e: self.root.attributes("-fullscreen", False))
@@ -31,8 +43,8 @@ class MiaGui:
         
         self.url_var = tk.StringVar(value="ws://192.168.100.25:3000/cable")  # <--- Agrega esto aquí
         self.websocket_mia = WebSocketMia(self) 
-        self.sorteo = ManejadorSorteo(self)
-        self.portal = ManejadorPortal(self.sorteo)
+        self.sorteo = ManejadorSorteo(self, self.ES_RPI)
+        self.portal = ManejadorPortal(self.sorteo, self.ES_RPI)
         self.inicia_conteo = False
         self.detiene_conteo = False
         self.sysqb_socket = None
