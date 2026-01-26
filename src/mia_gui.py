@@ -76,7 +76,7 @@ class MiaGui:
         sorteo_frame = tk.Frame(main_frame, relief=tk.GROOVE, borderwidth=2)
         #sorteo_frame.config(width=420)  # Ancho fijo en píxeles
         sorteo_frame.pack_propagate(True)  # No ajustar al contenido
-        sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(20, 20), padx=(20,20))
+        sorteo_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='n', pady=(20, 20), padx=(10,10))
         
         #
         # tipo_conteo_row: Conteo por IR o Conteo por Peso (Checkbuttons)
@@ -770,7 +770,8 @@ class MiaGui:
 
     def actualiza_pieza_registrada(self, piezas):
         self.pieza_registrada_entry.delete(0, tk.END)
-        self.pieza_registrada_entry.insert(0, f"{str(piezas):>6}")  
+        self.pieza_registrada_entry.insert(0, f"{str(piezas):>6} ")
+        self.pieza_registrada_entry.config(justify='right')
 
     def despliega_peso_actual(self, peso_actual):
         self.peso_actual_entry.delete(0, tk.END)
