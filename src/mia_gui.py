@@ -24,6 +24,7 @@ def es_raspberry_pi():
 
 class MiaGui:
     def __init__(self):
+
         # Detectar si es Raspberry Pi
         self.ES_RPI = es_raspberry_pi()
 
@@ -51,9 +52,12 @@ class MiaGui:
         self.mesa_id = "MIA-01"  # ID de la mesa por omisión
         self.conectado = False
         self.despliega_mensaje = False
+        # Control de parpadeo de alerta de báscula apagada (OK/NG)
+        self._blink_state = {"ok": False, "ng": False}
+        self._blink_job = {"ok": None, "ng": None}
         self.create_widgets()
         self.supervisa_conexion()
-        self.sorteo.inicia_bascula()
+        self.sorteo.inicia_basculas()
         self.root.option_add('*TCombobox*Listbox.font', self.mesa_popdown_font)  # Aplica la fuente grande al Combobox de mesa
 
         #self.root.update_idletasks()  # Asegura que la ventana esté actualizada antes de obtener dimensiones    
@@ -486,10 +490,10 @@ class MiaGui:
         pieza_final_ng_container = tk.Frame(self.lectura_peso_ng_container)
         pieza_final_ng_container.pack(pady=(5, 5), fill=tk.X, anchor='n')
         # Última pieza registrada NG
-        self.pieza_final_peso_ng_entry = tk.Entry(pieza_final_ng_container, font=("Arial", 16), width=6)
-        self.pieza_final_peso_ng_entry.pack(side=tk.LEFT, padx=5)
-        self.pieza_final_peso_ng_entry.config( fg="#FA0505")
-        self.pieza_final_peso_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
+        self.pieza_registrada_ng_entry = tk.Entry(pieza_final_ng_container, font=("Arial", 16), width=6)
+        self.pieza_registrada_ng_entry.pack(side=tk.LEFT, padx=5)
+        self.pieza_registrada_ng_entry.config( fg="#FA0505")
+        self.pieza_registrada_ng_entry.bind("<Key>", lambda e: "break")  # Bloquea teclado
         # Etiqueta y pieza detectada NG
         self.pieza_final_ng_label = tk.Label(pieza_final_ng_container, text="PZAS NG", font=("Arial", 20))
         self.pieza_final_ng_label.pack(side=tk.LEFT, padx=(10,0))
@@ -527,6 +531,13 @@ class MiaGui:
             cursor="hand2"
         )
         boton_apagado.place(x=10, y=10)  # Posiciona el botón en la esquina superior izquierda
+
+    # Ejecuta una función en el hilo de Tkinter (thread-safe)
+    def ui_call(self, fn, *args, **kwargs):
+        try:
+            self.root.after(0, lambda: fn(*args, **kwargs))
+        except Exception:
+            pass
     
     # Tarea periódica para supervisar el estado de la conexión
     def supervisa_conexion(self):
@@ -560,7 +571,7 @@ class MiaGui:
         return False
 
     # Actualiza la cajita de PIEZA No. y la cajita de sorteo accionada
-    def actualiza_cajitas(self, pieza_numero, peso_anterior, idx):
+    def actualiza_cajitas(self, pieza_numero, peso_anterior_ok, peso_anterior_ng, idx):
         entrys = [
             self.pza_ok_entry,
             self.pza_ng_entry_mix
@@ -570,11 +581,22 @@ class MiaGui:
         self.pieza_entry.delete(0, tk.END)
         self.pieza_entry.insert(0, f"{pieza_numero:>6}")
         self.pieza_entry.config(state="disabled")  # deshabilita temporalmente
-        # Actualiza la cajita de peso anterior
-        self.peso_ultimo_entry.config(state="normal")  # Habilita temporalmente
+        # Actualiza las cajitas de peso anterior (OK y NG)
+        self.peso_ultimo_entry.config(state="normal")
         self.peso_ultimo_entry.delete(0, tk.END)
-        self.peso_ultimo_entry.insert(0, f"{peso_anterior:>6.1f}")
-        #self.peso_ultimo_entry.config(state="disabled")  # deshabilita temporalmente
+        self.peso_ultimo_entry.insert(0, f"{peso_anterior_ok:>6.1f}")
+        self.peso_ultimo_ng_entry.config(state="normal")
+        self.peso_ultimo_ng_entry.delete(0, tk.END)
+        self.peso_ultimo_ng_entry.insert(0, f"{peso_anterior_ng:>6.1f}")
+        # Actualiza las cajitas de pieza registrada (OK y NG)
+        # self.pieza_registrada_entry.config(state="normal")
+        # self.pieza_registrada_entry.delete(0, tk.END)
+        # self.pieza_registrada_entry.insert(0, f"{self.sorteo.pieza_registrada_ok:>6}")
+        # self.pieza_registrada_entry.config(state="disabled")
+        # self.pieza_registrada_ng_entry.config(state="normal")
+        # self.pieza_registrada_ng_entry.delete(0, tk.END)
+        # self.pieza_registrada_ng_entry.insert(0, f"{self.sorteo.pieza_registrada_ng:>6}")
+        # self.pieza_registrada_ng_entry.config(state="disabled")
         # Actualiza la cajita del sorteo
         entrys[idx].delete(0, 'end')
         entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
@@ -623,13 +645,49 @@ class MiaGui:
     def despliega_titulo_peso(self):
         self.titulo_peso.config(text="DETECCIÓN DE PIEZAS/PESO (gms)", fg="Black")
 
-    def despliega_bascula_apagada(self, despliega):
+    def despliega_bascula_apagada(self, despliega, cual="ok"):
+        """Muestra alerta de báscula apagada.
+
+        En el código original el mensaje parpadeaba. Aquí se re-implementa el parpadeo
+        usando `after()`.
+        """
         if self.tipo_conteo_ir.get():
             return
+
+        cual = "ng" if cual == "ng" else "ok"
+
         if despliega:
-            self.titulo_peso.config(text="!!! BÁSCULA  APAGADA ...", fg="#FF0000")
+            # Arranca parpadeo
+            if self._blink_job.get(cual):
+                return  # ya está parpadeando
+            self._blink_state[cual] = False
+            self._blink_toggle(cual)
         else:
-            self.titulo_peso.config(text=" ", fg="Black")
+            # Detiene parpadeo
+            job = self._blink_job.get(cual)
+            if job:
+                try:
+                    self.root.after_cancel(job)
+                except Exception:
+                    pass
+            self._blink_job[cual] = None
+            self._blink_state[cual] = False
+            # Restaura título normal
+            self.despliega_titulo_peso()
+
+    def _blink_toggle(self, cual="ok"):
+        # Alterna entre mensaje rojo y título normal
+        self._blink_state[cual] = not self._blink_state.get(cual, False)
+        if self._blink_state[cual]:
+            if cual == "ng":
+                self.titulo_peso.config(text="!!! BÁSCULA NG APAGADA ...", fg="#FF0000")
+            else:
+                self.titulo_peso.config(text="!!! BÁSCULA OK APAGADA ...", fg="#FF0000")
+        else:
+            self.titulo_peso.config(text="DETECCIÓN DE PIEZAS/PESO (gms)", fg="Black")
+
+        # Programa siguiente toggle
+        self._blink_job[cual] = self.root.after(700, lambda: self._blink_toggle(cual))
        
     def limpia_cajitas(self):  
         entrys = [
@@ -754,28 +812,57 @@ class MiaGui:
         except ValueError:
             pass  # Ignora errores si algún Entry está vacío o tiene un valor inválido
 
-    def actualiza_pesos(self, actual, peso_pieza):
-        self.peso_actual_entry.delete(0, tk.END)
-        self.peso_actual_entry.insert(0, f"{str(actual):>8}")
-        self.pieza_final_peso_entry.delete(0, tk.END)
-        self.pieza_final_peso_entry.insert(0, f"{str(peso_pieza):>8}") 
+    def actualiza_pesos(self, actual, piezas, cual="ok"):
+        self.despliega_peso_actual(actual, cual)
+        if cual == "ng":
+            self.pieza_final_peso_ng_entry.delete(0, tk.END)
+            self.pieza_final_peso_ng_entry.insert(0, f"{str(piezas):>8}")
+        else:
+            self.pieza_final_peso_entry.delete(0, tk.END)
+            self.pieza_final_peso_entry.insert(0, f"{str(piezas):>8}")
 
-    def actualiza_peso_anterior(self, anterior):
-        self.peso_ultimo_entry.delete(0, tk.END)
-        self.peso_ultimo_entry.insert(0, f"{anterior:>6.1f}") 
+    def actualiza_peso_anterior(self, anterior, cual="ok"):
+        if cual == "ok":
+            self.peso_ultimo_entry.delete(0, tk.END)
+            self.peso_ultimo_entry.insert(0, f"{anterior:>6.1f}")
+        else:
+            self.peso_ultimo_ng_entry.delete(0, tk.END)
+            self.peso_ultimo_ng_entry.insert(0, f"{anterior:>6.1f}")
+           
 
-    def borra_pieza_final(self):
-        self.pieza_final_peso_entry.delete(0, tk.END)
-        self.pieza_final_peso_entry.insert(0, f"{str(0):>8}")   
+    def borra_pieza_final(self, cual="ok"):
+        if cual == "ng":
+            self.pieza_final_peso_ng_entry.delete(0, tk.END)
+            self.pieza_final_peso_ng_entry.insert(0, f"{str(0):>8}")
+        else:
+            self.pieza_final_peso_entry.delete(0, tk.END)
+            self.pieza_final_peso_entry.insert(0, f"{str(0):>8}")
 
-    def actualiza_pieza_registrada(self, piezas):
+    def actualiza_pieza_registrada(self, piezas, cual="ok"):
+        if cual == "ng": 
+            self.pieza_registrada_ng_entry.delete(0, tk.END)
+            self.pieza_registrada_ng_entry.insert(0, f"{str(piezas):>6} ")
+            self.pieza_registrada_ng_entry.config(justify='right')
+        else:
+            self.pieza_registrada_entry.delete(0, tk.END)
+            self.pieza_registrada_entry.insert(0, f"{str(piezas):>6} ")
+            self.pieza_registrada_entry.config(justify='right')
+
+    def actualiza_piezas_registradas_okng(self, piezas_ok, piezas_ng):
+        self.pieza_registrada_ng_entry.delete(0, tk.END)
+        self.pieza_registrada_ng_entry.insert(0, f"{str(piezas_ng):>6} ")
+        self.pieza_registrada_ng_entry.config(justify='right')
         self.pieza_registrada_entry.delete(0, tk.END)
-        self.pieza_registrada_entry.insert(0, f"{str(piezas):>6} ")
+        self.pieza_registrada_entry.insert(0, f"{str(piezas_ok):>6} ")
         self.pieza_registrada_entry.config(justify='right')
 
-    def despliega_peso_actual(self, peso_actual):
-        self.peso_actual_entry.delete(0, tk.END)
-        self.peso_actual_entry.insert(0, f"{str(peso_actual):>8}")
+    def despliega_peso_actual(self, peso_actual, cual="ok"):
+        if cual == "ng":
+            self.peso_actual_ng_entry.delete(0, tk.END)
+            self.peso_actual_ng_entry.insert(0, f"{str(peso_actual):>8}")
+        else:
+            self.peso_actual_entry.delete(0, tk.END)
+            self.peso_actual_entry.insert(0, f"{str(peso_actual):>8}")
     
     def limpia_pesos(self):
         # detener hilo de muestreo

@@ -1,4 +1,5 @@
 import asyncio
+import glob
 import threading
 import time
 import random
@@ -7,13 +8,169 @@ import serial
 import re
 import sys
 
+# ===============================
+# MODO DE PRUEBA
+# ===============================
+# True  = Solo báscula NG
+# False = Modo normal OK + NG
+SOLO_NG = False
+
+class BasculaAgente:
+    """ Métodos y variables para leer pesos estables de la báscula. 
+        Mediante incia() se conecta a una báscula por el puerto serial indicado y habilita un hilo 
+        para muestrear pesos en un lazo infinito. 
+        No toca widgets Tkinter directamente. Siempre notifica al handler,
+        y el handler hace `gui.ui_call(...)`.
+    """
+
+    def __init__(self, cual, port, baud, sorteo):
+        self.cual = cual  # "ok" o "ng"
+        self.port = port
+        self.baud = baud
+        self.sorteo = sorteo
+
+        self.ser = None     # El objeto que maneja el puerto serial
+        self.activa = False # Bandera de báscula conectada y muestreando
+
+        # Estado por báscula
+        self.peso_bascula = 0.0     # Peso instantáneo leído, no necesariamente estable
+        self.peso_anterior = 0.0    # Último peso utilizado para incrementar contadores. 
+        self.peso_actual = 0.0      # Último peso válido durante el muestreo. Lo utiliza lee_bascula_serie() para retornar en caso de error
+        self.tara = 0.0
+        self.en_error = False
+
+        # Parámetros de estabilidad
+        self.num_lecturas_max = 10      # Número máximo de lecturas para evaluar estabilidad
+        self.umbral_estabilidad = 2.0   # En gramos
+        self.lecturas_consecutivas_estables = 3 # Número de lecturas consecutivas dentro del umbral para considerar estable
+
+        # Detección de báscula apagada: adaptador conectado pero sin datos en el puerto
+        self.empty_reads = 0
+        self.max_empty_reads = 25  # ~2.5s con timeout=0.1
+
+    def inicia(self):
+        # Verifica si el puerto ya está abierto
+        if self.ser and getattr(self.ser, "is_open", False):
+            print(f"El puerto serial de báscula {self.cual.upper()} ya está abierto.")
+            return
+        try:
+            self.ser = serial.Serial(self.port, self.baud, timeout=0.1)
+            print(f"Puerto serial de báscula {self.cual.upper()} abierto en: {self.port}")
+            self.activa = True
+            threading.Thread(target=self.loop, daemon=True).start()
+        except serial.SerialException as e:
+            print(f"Error al abrir el puerto serial ({self.cual}): {e}")
+            self.ser = None
+
+    def loop(self):
+        while self.activa:
+            try:
+                self.muestrea()
+            except Exception as e:
+                print(f"Error en el hilo de muestreo de la báscula {self.cual}: {e}")
+
+    def muestrea(self):
+        self.peso_bascula = self.lee_bascula()
+        if self.peso_bascula is None:
+            # Sin lectura válida (apagada o error de comunicación). Marca estado y avisa.
+            if not self.en_error:
+                self.en_error = True
+                print(f"\n[{self.cual.upper()}] Báscula apagada / sin datos en el puerto {self.port}")
+                self.sorteo._bascula_apagada(self.cual)
+            time.sleep(0.5)
+            return
+
+        # Si veníamos de error, limpia el estado y avisa recuperación
+        if self.en_error:
+            self.en_error = False
+            self.empty_reads = 0
+            print(f"\n[{self.cual.upper()}] Báscula recuperada / datos recibidos en {self.port}")
+            self.sorteo._bascula_recuperada(self.cual)
+
+        # Se actualiza la última lectura válida
+        self.peso_actual = self.peso_bascula
+        self.sorteo._bascula_peso_actual(self.cual, self.peso_bascula)
+
+        # Si no está activo conteo por peso, no evalua piezas
+        if self.sorteo.gui.tipo_conteo_peso.get() is False:
+            return
+
+        # Evalúa si hay nueva pieza por peso según los parámetros de calibración
+        es_valido, piezas = self.sorteo.es_nueva_pieza_por_peso(self.peso_anterior, self.peso_bascula)
+        if es_valido:
+            self.sorteo._bascula_pieza_valida(self.cual, piezas, self.peso_bascula, self.peso_anterior)
+            self.peso_anterior = self.peso_bascula
+
+    def lee_bascula_serie(self):
+        try:
+            linea = self.ser.readline().decode(errors="ignore").strip()
+
+            # Caso 1: no llegó nada (timeout) => cuenta como lectura vacía
+            if not linea:
+                self.empty_reads += 1
+                if self.empty_reads >= self.max_empty_reads:
+                    return None
+                return self.peso_actual
+
+            # Caso 2: llegó texto pero puede no traer número
+            coincidencias = re.search(r"([+-])?\s*(\d+(?:\.\d+)?)", linea)
+            if not coincidencias:
+                self.empty_reads += 1
+                if self.empty_reads >= self.max_empty_reads:
+                    return None
+                return self.peso_actual
+
+            # Caso 3: llegó número válido
+            signo = coincidencias.group(1) or "+"
+            numero = coincidencias.group(2)
+            peso = round(float(f"{signo}{numero}"), 1)
+            sys.stdout.write(
+                f"\r[{self.cual.upper()}] Línea: {linea.strip()} // Peso: {peso:+6.1f}g //  "
+            )
+            sys.stdout.flush()
+            self.empty_reads = 0
+            return peso
+
+        except serial.SerialException as e:
+            print(f"Error del puerto serial ({self.cual}): {e}")
+            self.empty_reads = self.max_empty_reads
+            return None
+        except Exception as e:
+            print(f"Error en lee_bascula_serie ({self.cual}): {e}")
+            return None
+
+    def lee_bascula(self):
+        lecturas = []
+        contador_estables = 0
+
+        for _ in range(self.num_lecturas_max):
+            peso = self.lee_bascula_serie()
+            if peso is None:
+                return None
+
+            lecturas.append(peso)
+            if len(lecturas) > 1:
+                diferencia = abs(lecturas[-1] - lecturas[-2])
+                if diferencia <= self.umbral_estabilidad:
+                    contador_estables += 1
+                else:
+                    contador_estables = 0
+
+            if contador_estables >= self.lecturas_consecutivas_estables:
+                ult = lecturas[-self.lecturas_consecutivas_estables:]
+                return round(sum(ult) / len(ult), 1)
+
+        # Si no se alcanzó estabilidad
+        return 0.0
+
+
 class ManejadorSorteo:
     def __init__(self, gui, es_rpi):
         self.gui = gui
         self.es_rpi = es_rpi
         self.loop = asyncio.get_event_loop()
         # Inicializa los contadores de las cajitas de sorteo
-        self.contadores_cajitas = [0] * 4           # OK, NG-MIX, num_pieza, peso_anterior
+        self.contadores_cajitas = [0] * 7           # OK, NG-MIX, num_pieza, peso_anterior_ok, peso_anterior_ng
         self.estado_botones_inci = [False] * 5      # Estado de los botones de incidentes
         self.multiplicador = 1                      # Multiplicador de piezas: 1, 10, 100
         self.pieza_numero = 1
@@ -30,13 +187,21 @@ class ManejadorSorteo:
         # Pila para guardar el estado de los contadores
         self.stack_contadores = []
 
-        # Variables de la báscula
+        # Protege estado compartido (básculas vs websocket vs GUI)
+        self._state_lock = threading.Lock()
+
+        # Variables de básculas (OK/NG)
+        # Mantengo `peso_bascula` como alias de la báscula OK para no romper calibración existente.
         self.peso_bascula = 0.0
-        self.peso_anterior = 0.0
-        self.peso_actual = 0.0
-        self.tara = 0.0  # Tara de la báscula
-        self.ser = None  # Puerto serial de la báscula
-    
+        self.peso_bascula_ng = 0.0
+
+        self.bascula_ok = None
+        self.bascula_ng = None
+        # Peso y piezas anterior por báscula (para stack/cajitas)
+        self.peso_anterior_ok = 0.0
+        self.peso_anterior_ng = 0.0
+        self.pieza_registrada_ng = 0
+        self.pieza_registrada_ok = 0
        
     # Respuesta al botón INIC: limpia contadores
     def inicia_conteo(self):
@@ -58,12 +223,29 @@ class ManejadorSorteo:
         self.contador_ok = 0
         self.contador_ng = 0
         self.pieza_numero = 1
-        self.contadores_cajitas = [0] * 4  # OK, NG-MIX, num_pieza, peso_anterior
-        self.gui.limpia_cajitas()
-        self.peso_anterior = 0.0
-        self.peso_actual = 0.0
-        self.tara = 0.0
+        self.contadores_cajitas = [0] * 7  # OK, NG-MIX, num_pieza, peso_anterior_ok, peso_anterior_ng
+        # Reinicia la pila de deshacer para evitar estados viejos/incompatibles
+        self.stack_contadores = []
+        self.gui.ui_call(self.gui.limpia_cajitas)
+        # Resetea lecturas de básculas
         self.peso_bascula = 0.0
+        self.peso_bascula_ng = 0.0
+        self.peso_anterior_ok = 0.0
+        self.peso_anterior_ng = 0.0
+        self.pieza_registrada_ng = 0
+        self.pieza_registrada_ok = 0
+        if self.bascula_ok:
+            self.bascula_ok.peso_anterior = 0.0
+            self.bascula_ok.peso_bascula = 0.0
+            self.bascula_ok.peso_actual = 0.0
+            self.bascula_ok.tara = 0.0
+            self.bascula_ok.en_error = False
+        if self.bascula_ng:
+            self.bascula_ng.peso_anterior = 0.0
+            self.bascula_ng.peso_bascula = 0.0
+            self.bascula_ng.peso_actual = 0.0
+            self.bascula_ng.tara = 0.0
+            self.bascula_ng.en_error = False
 
         # Pone el "radiobutton" de multiplicador en X1
         self.gui.multiplicador_var.set(1)
@@ -118,43 +300,82 @@ class ManejadorSorteo:
         return self.contador_ng
     
     def push_contadores(self):
-        # Guarda el estado actual de los contadores en la pila
+        # Guarda el estado actual de los contadores en la pila.
         self.stack_contadores.append(self.contadores_cajitas.copy())
 
     def pop_contadores(self):
-        # Restaura el estado anterior de los contadores desde la pila
+        # Restaura el estado anterior de los contadores desde la pila.
+        # IMPORTANT: también debe restaurar el `peso_anterior` interno de cada BasculaAgente,
+        # porque es el que se usa para calcular incrementos (piezas) en el hilo de muestreo.
+     
         if self.stack_contadores:
             self.contadores_cajitas = self.stack_contadores.pop()
             self.pieza_numero = self.contadores_cajitas[2]
-            self.peso_anterior = self.contadores_cajitas[3]
-            for idx in range(2):
-                self.gui.actualiza_cajitas(self.pieza_numero, self.peso_anterior, idx)  # Llama a actualiza_cajitas para reflejar el cambio
+            self.peso_anterior_ok = self.contadores_cajitas[3]
+            self.peso_anterior_ng = self.contadores_cajitas[4]
+            self.pieza_registrada_ok = self.contadores_cajitas[5]
+            self.pieza_registrada_ng = self.contadores_cajitas[6]
+
+            # Sincroniza el estado interno de las básculas con el peso anterior restaurado
+            if self.bascula_ok is not None:
+                self.bascula_ok.peso_anterior = self.peso_anterior_ok
+            if self.bascula_ng is not None:
+                self.bascula_ng.peso_anterior = self.peso_anterior_ng
+
         else:
             print("La pila de contadores está vacía. No se puede realizar pop.")
+            return
+
+        # Actualiza GUI fuera del lock (solo UI)
+        for idx in range(2):
+            self.gui.ui_call(
+                self.gui.actualiza_cajitas,
+                self.pieza_numero,
+                self.peso_anterior_ok,
+                self.peso_anterior_ng,
+                idx,
+            )
+        self.gui.ui_call(
+            self.gui.actualiza_piezas_registradas_okng,
+            self.pieza_registrada_ok,
+            self.pieza_registrada_ng,
+        )
 
     def incrementa_contador(self, idx, piezas):
-        self.contadores_cajitas[2] = self.pieza_numero
-        self.contadores_cajitas[3] = self.peso_anterior
-        self.push_contadores()  # Guarda el estado actual antes de modificarlo
-        if self.gui.tipo_conteo_peso.get():
-            self.multiplicador = piezas
-        else:
-            self.multiplicador = self.gui.multiplicador_var.get()
+        with self._state_lock:
+            self.contadores_cajitas[2] = self.pieza_numero
+            self.contadores_cajitas[3] = self.peso_anterior_ok
+            self.contadores_cajitas[4] = self.peso_anterior_ng
+            self.contadores_cajitas[5] = self.pieza_registrada_ok
+            self.contadores_cajitas[6] = self.pieza_registrada_ng
+            self.push_contadores()  # Guarda el estado actual antes de modificarlo
 
-        self.contadores_cajitas[idx] += self.multiplicador
-        ok = ng = 0
-        if idx == 0:
-            ok = self.multiplicador
-        else:
-            ng = self.multiplicador  
+            if self.gui.tipo_conteo_peso.get():
+                self.multiplicador = piezas
+            else:
+                self.multiplicador = self.gui.multiplicador_var.get()
 
+            self.contadores_cajitas[idx] += self.multiplicador
+            ok = ng = 0
+            if idx == 0:
+                ok = self.multiplicador
+            else:
+                ng = self.multiplicador
+
+            pieza_envio = self.pieza_numero
+            mult_envio = self.multiplicador
+            self.pieza_numero += self.multiplicador
+
+        # Envía mensaje fuera del lock
         asyncio.run_coroutine_threadsafe(
-            self._pieza_inspeccionada(self.pieza_numero, idx, ok, ng),
-            self.loop
+            self._pieza_inspeccionada(pieza_envio, idx, ok, ng),
+            self.loop,
         )
-        self.pieza_numero += self.multiplicador
-        self.gui.actualiza_cajitas(self.pieza_numero, self.peso_anterior, idx)
 
+        # IMPORTANT: este método puede ser llamado desde el hilo de la báscula.
+        # Toda actualización de Tkinter debe encolarse al hilo principal.
+        self.gui.ui_call(self.gui.actualiza_cajitas, self.pieza_numero, self.peso_anterior_ok, self.peso_anterior_ng, idx)
+       
     # Función del protocolo MIA-Proper 1.0: Envía el comando 'PIEZA_INSPEC'
     async def _pieza_inspeccionada(self, pieza, idx, ok, ng):
         incidentes = ["", "1", "2", "3", "4", "5"]
@@ -189,69 +410,58 @@ class ManejadorSorteo:
     # Funciones para el manejo de la báscula
     # 
     #############################################################
-    def inicia_bascula(self):
+
+    def inicia_basculas(self):
+        BAUD = 9600
+        print(f"Modo SOLO_NG = {SOLO_NG}")  # Despliega la global de prueba
+
+        # Puertos por plataforma (autodetección). Si solo hay 1 báscula, NO se inicia NG.
+        port_ok = None
+        port_ng = None
+
         if self.es_rpi:
-            PORT = "/dev/ttyUSB0"
+            # RPi suele exponer /dev/ttyUSB*
+            puertos = sorted(glob.glob("/dev/ttyUSB*") + glob.glob("/dev/ttyACM*"))
         else:
-            PORT = "/dev/cu.usbserial-210"
-        BAUD = 9600 
+            # macOS suele exponer /dev/cu.usbserial* o /dev/cu.usbmodem*
+            puertos = sorted(glob.glob("/dev/cu.usbserial*") + glob.glob("/dev/cu.usbmodem*"))
 
-        # Verifica si el puerto ya está abierto
-        if self.ser and self.ser.is_open:
-            print("El puerto serial ya está abierto.")
-            return
-        # Inicializa el puerto serial e inicia el hilo de muestreo
-        try:
-            self.ser = serial.Serial(PORT, BAUD, timeout=0.1)  # Reducir el timeout para lecturas más rápidas
-            print("Puerto serial de báscula abierto en: ", PORT)
-            self.sorteo_activo = True
+        if len(puertos) >= 1:
+            port_ok = puertos[0]
+        if len(puertos) >= 2:
+            port_ng = puertos[1]
 
-            # Inicia el hilo para muestrear la báscula: loop_muestreo()
-            self.hilo_bascula = threading.Thread(target=self.loop_muestreo, daemon=True)
-            self.hilo_bascula.start()
-        #
-        except serial.SerialException as e:
-            print("Error al abrir el puerto serial:", e)
-            self.ser = None
+        if SOLO_NG:
+            # Si solo hay 1 puerto conectado, úsalo como NG
+            if port_ok and not port_ng:
+                port_ng = port_ok
+            # Desactiva OK
+            port_ok = None
 
-    def loop_muestreo(self):
-        while self.sorteo_activo:
-            try:
-                self.muestrea_bascula()
-            except Exception as e:
-                print("Error en el hilo de muestreo de la báscula:", e)
-    # 
-    # Función de muestro continuo de la báscula y detección de nuevas piezas por peso
-    def muestrea_bascula(self):
-        self.peso_bascula = self.lee_bascula()
-        if self.peso_bascula == None: 
-            # La báscula está apagada o no se pudo leer. Parpadea el indicador en la GUI. 
-            self.tara = self.peso_anterior
-            self.gui.despliega_bascula_apagada(True)
-            time.sleep(1.0) # Tiempo de parpadeo de báscula apagada
-            self.gui.despliega_bascula_apagada(False)
-            return
+        print(f"Puertos detectados: {puertos}")
+        print(f"Báscula OK  -> {port_ok}")
+        print(f"Báscula NG  -> {port_ng if port_ng else 'NO CONECTADA'}")
+
+        # OK: siempre que exista puerto
+        if port_ok:
+            if not self.bascula_ok:
+                self.bascula_ok = BasculaAgente("ok", port_ok, BAUD, self)
+            else:
+                self.bascula_ok.port = port_ok
+            self.bascula_ok.inicia()
         else:
-            self.peso_bascula = self.peso_bascula + self.tara
-            self.gui.despliega_peso_actual(self.peso_bascula)
+            print("No se detectó puerto para báscula OK.")
 
-        self.gui.despliega_titulo_peso()
-        if self.gui.tipo_conteo_peso.get() == False:
-            return
-        
-        es_valido, piezas = self.es_nueva_pieza_por_peso(self.peso_anterior, self.peso_bascula)
-        if es_valido:  
-            print(f"Peso válido: {self.peso_bascula} kg, Piezas estimadas: {piezas}")  
-            self.gui.portal.prende_led_ok()
-            self.incrementa_contador(0, piezas)
-            peso_pieza = round(self.peso_bascula - self.peso_anterior, 1)
-            self.peso_anterior = self.peso_bascula
-            self.gui.actualiza_pesos(self.peso_bascula, piezas)
-            time.sleep(3.0) # Después de pieza válida, espera un poco antes de apagar el LED y actualizar la GUI
-            self.gui.actualiza_peso_anterior(self.peso_anterior)
-            self.gui.actualiza_pieza_registrada(piezas)
-            self.gui.borra_pieza_final()
-            self.gui.portal.apaga_led_ok()
+        # NG: solo si existe segundo puerto
+        if port_ng:
+            if not self.bascula_ng:
+                self.bascula_ng = BasculaAgente("ng", port_ng, BAUD, self)
+            else:
+                self.bascula_ng.port = port_ng
+            self.bascula_ng.inicia()
+        else:
+            # Si no hay NG conectada, asegúrate de no arrancarla.
+            self.bascula_ng = None
 
     def es_nueva_pieza_por_peso(self, anterior, actual):
         try:
@@ -277,8 +487,9 @@ class ManejadorSorteo:
                 return False, 0
         except ValueError:
             return False, 0
-        
-    def lee_bascula_ok(self):
+    
+    # Esta función lee la báscula HID Dymo M10/M25. Ya no se utiliza en el código actual.
+    def lee_bascula_dymo(self):
         VENDOR_ID = 0x0922  # 2338 - 
         PRODUCT_ID = 0x8003  # 32771 - Dymo M10/M25
 
@@ -298,81 +509,63 @@ class ManejadorSorteo:
             print("Error al leer la báscula:", e)
             return self.peso_actual
         
-    def lee_bascula_serie_ok(self):
-        try:
-            linea = self.ser.readline().decode(errors="ignore").strip()
-            if linea:
-                # Captura signo opcional (+/-) aunque haya espacios entre el signo y el número
-                coincidencias = re.search(r"([+-])?\s*(\d+(?:\.\d+)?)", linea)
-                if coincidencias:
-                    signo = coincidencias.group(1) or "+"
-                    numero = coincidencias.group(2)
-                    peso = round(float(f"{signo}{numero}"), 1)
-                    # Escribe en la misma línea y fuerza el flush
-                    sys.stdout.write(f"\rLínea de entrada: {linea.strip()} // Peso detectado: {peso:+6.1f}g //  ")
-                    sys.stdout.flush()
-                    return peso 
-                else:
-                    print("No se recibió dato válido")
-                    return self.peso_actual
-            else:
-                print("Línea vacía recibida, posiblemente la báscula está apagada.")
-                return -1.0
+    # ---------------------------------
+    #   Manejadores del GUI (handlers thread-safe): Métodos seguros para enviar información 
+    #   desde los hilos de las básculas hacia el hilo del GUI. Siempre usan gui.ui_call()
+    #   como método de enlace.
+    # ---------------------------------
+    def _bascula_apagada(self, cual):
+        self.gui.ui_call(self.gui.despliega_bascula_apagada, True, cual)
 
-        except serial.SerialException as e:
-            print("Error del puerto serial:", e)
-            return None  # Valor de error, no se pudo leer la báscula
-        except Exception as e:
-            print("Error en lee_bascula_serie_ok:", e)
-            return None
+    def _bascula_recuperada(self, cual):
+        self.gui.ui_call(self.gui.despliega_bascula_apagada, False, cual)
 
-    def lee_bascula(self):
-        num_lecturas_max = 10  # Número máximo de lecturas consecutivas
-        umbral_estabilidad = 2.0  # Diferencia máxima permitida entre lecturas (en gramos)
-        lecturas_consecutivas_estables = 3  # Número de lecturas consecutivas necesarias para considerar estabilidad
+    def _bascula_peso_actual(self, cual, peso):
+        # Si NG no está conectada, ignora cualquier update NG
+        if cual == "ng" and self.bascula_ng is None:
+            return
 
-        lecturas = []
-        contador_estables = 0
+        if cual == "ng":
+            self.peso_bascula_ng = peso
+            if self.bascula_ok is None:
+                self.peso_bascula = peso
+        else:
+            self.peso_bascula = peso
 
-        for _ in range(num_lecturas_max):
-            try:
-                peso = self.lee_bascula_serie_ok()  # Llama al método que realiza una lectura de la báscula
-                if peso == None:
-                    return None # Indica que la báscula está apagada o hubo un error
-                
-                lecturas.append(peso)
-                # Si hay lecturas previas, compara con la última
-                if len(lecturas) > 1:
-                    diferencia = abs(lecturas[-1] - lecturas[-2])
-                    if diferencia <= umbral_estabilidad:
-                        contador_estables += 1
-                    else:
-                        contador_estables = 0  # Reinicia el contador si la lectura no es estable
+        self.gui.ui_call(self.gui.despliega_peso_actual, peso, cual)
+        self.gui.ui_call(self.gui.despliega_titulo_peso)
 
-                # Si se alcanzan las lecturas consecutivas estables necesarias, regresa el valor promedio
-                if contador_estables >= lecturas_consecutivas_estables:
-                    return round(sum(lecturas[-lecturas_consecutivas_estables:]) / lecturas_consecutivas_estables, 1)
+    def _bascula_pieza_valida(self, cual, piezas, peso_actual, peso_anterior):
+        # Si NG no está conectada, ignora cualquier evento NG
+        if cual == "ng" and self.bascula_ng is None:
+            return
+        # Selección de contador y LED
+        if cual == "ng":
+            idx = 1
+            self.gui.portal.prende_led_ng()
+        else:
+            idx = 0
+            self.gui.portal.prende_led_ok()
 
-            except Exception as e:
-                print("Error en lee_bascula:", e)
-                return 0.0  # Regresa un valor predeterminado en caso de error
+        # Mantiene peso anterior por báscula (stack/cajitas)
+        if cual == "ng":
+            self.peso_anterior_ng = peso_anterior
+        else:
+            self.peso_anterior_ok = peso_anterior
+        self.incrementa_contador(idx, piezas)
 
-            #time.sleep(0.1)  # Pausa breve entre lecturas para evitar lecturas rápidas consecutivas
+        # Actualiza GUI (thread-safe)
+        self.gui.ui_call(self.gui.actualiza_pesos, peso_actual, piezas, cual)
 
-        # Si no se alcanzó estabilidad después del número máximo de lecturas, regresa un valor predeterminado
-        print("\nLectura inestable después de", num_lecturas_max, "lecturas:", lecturas)
-        return 0.0
+        time.sleep(3.0)
+        print(f"antes de actualiza_peso_anterior(): {cual}")
+        self.gui.ui_call(self.gui.actualiza_peso_anterior, peso_actual, cual)
+        self.gui.ui_call(self.gui.actualiza_pieza_registrada, piezas, cual)
+        self.gui.ui_call(self.gui.borra_pieza_final, cual)
 
-    def lee_bascula_simula(self):
-        try:
-            promedio = float(self.gui.peso_promedio_entry.get())
-            tolerancia_pct = float(self.gui.tolerancia_var.get()) / 100.0
-        except ValueError:
-            promedio = 100.0
-            tolerancia_pct = 0.05
-
-        peso_pieza = random.uniform(
-            promedio * (1.0 - tolerancia_pct),
-            promedio * (1.0 + tolerancia_pct)
-        )
-        return round(self.peso_actual + peso_pieza, 1)
+        if cual == "ng":
+            self.pieza_registrada_ng = piezas
+            self.gui.portal.apaga_led_ng()
+        else:
+            self.pieza_registrada_ok = piezas
+            self.gui.portal.apaga_led_ok()
