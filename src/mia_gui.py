@@ -140,6 +140,9 @@ class MiaGui:
             ok_btn.itemconfig(rect_ok_2, fill="white")  # Color original al salir
         ok_btn.bind("<Enter>", on_ok_hover)
         ok_btn.bind("<Leave>", on_ok_leave)
+        # Permite utilizar estas funciones fuera de create_widgets
+        self.on_ok_hover = on_ok_hover
+        self.on_ok_leave = on_ok_leave
 
         #
         # pza_ng_container_mix: Etiqueta, cajita y contador para "Piezas NG-MIX"
@@ -165,7 +168,9 @@ class MiaGui:
             ngmix_btn.itemconfig(rect_ngmix, fill="white")  # Color original al salir
         ngmix_btn.bind("<Enter>", on_ngmix_hover)
         ngmix_btn.bind("<Leave>", on_ngmix_leave)
-
+        # Permite utilizar estas funciones fuera de create_widgets
+        self.on_ngmix_hover = on_ngmix_hover
+        self.on_ngmix_leave = on_ngmix_leave
         #
         # pieza_container: PIEZA No.
         #
@@ -581,13 +586,25 @@ class MiaGui:
         self.pieza_entry.delete(0, tk.END)
         self.pieza_entry.insert(0, f"{pieza_numero:>6}")
         self.pieza_entry.config(state="disabled")  # deshabilita temporalmente
-        # Actualiza las cajitas de peso anterior (OK y NG)
-        self.peso_ultimo_entry.config(state="normal")
-        self.peso_ultimo_entry.delete(0, tk.END)
-        self.peso_ultimo_entry.insert(0, f"{peso_anterior_ok:>6.1f}")
-        self.peso_ultimo_ng_entry.config(state="normal")
-        self.peso_ultimo_ng_entry.delete(0, tk.END)
-        self.peso_ultimo_ng_entry.insert(0, f"{peso_anterior_ng:>6.1f}")
+        # Actualiza las cajitas de peso anterior.
+        # NOTA: durante el conteo normal (idx 0/1) solo se actualiza el "peso anterior" de esa báscula
+        # para no pisar el valor de la otra báscula.
+        if idx == 0:
+            self.peso_ultimo_entry.config(state="normal")
+            self.peso_ultimo_entry.delete(0, tk.END)
+            self.peso_ultimo_entry.insert(0, f"{peso_anterior_ok:>6.1f}")
+        elif idx == 1:
+            self.peso_ultimo_ng_entry.config(state="normal")
+            self.peso_ultimo_ng_entry.delete(0, tk.END)
+            self.peso_ultimo_ng_entry.insert(0, f"{peso_anterior_ng:>6.1f}")
+        else:
+            # Caso genérico: actualiza ambos
+            self.peso_ultimo_entry.config(state="normal")
+            self.peso_ultimo_entry.delete(0, tk.END)
+            self.peso_ultimo_entry.insert(0, f"{peso_anterior_ok:>6.1f}")
+            self.peso_ultimo_ng_entry.config(state="normal")
+            self.peso_ultimo_ng_entry.delete(0, tk.END)
+            self.peso_ultimo_ng_entry.insert(0, f"{peso_anterior_ng:>6.1f}")
         # Actualiza las cajitas de pieza registrada (OK y NG)
         # self.pieza_registrada_entry.config(state="normal")
         # self.pieza_registrada_entry.delete(0, tk.END)
@@ -600,6 +617,13 @@ class MiaGui:
         # Actualiza la cajita del sorteo
         entrys[idx].delete(0, 'end')
         entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
+
+        if idx == 0:
+            self.on_ok_hover(None)       # simula hover OK
+            self.on_ngmix_leave(None)    # quita hover NG
+        else:
+            self.on_ngmix_hover(None)    # simula hover NG
+            self.on_ok_leave(None)       # quita hover OK
 
     #  Función de respuesta al toque para los botones de tipo de incidente ("callback")
     def circulo_boton_callback(self, idx):
@@ -782,36 +806,6 @@ class MiaGui:
         self.peso_promedio_entry.insert(0, f"{promedio:.2f}")
         return
     
-    # Función para tomar muestras secuenciales
-    # def toma_muestra_secuencial(self):
-    #     try:
-    #         peso = self.sorteo.peso_bascula  # Obtiene el peso de la báscula
-    #         self.peso_entries[self.muestra_actual].delete(0, tk.END)
-    #         self.peso_entries[self.muestra_actual].insert(0, f"{str(peso):>5}")
-
-    #         # Actualiza el índice de la muestra actual
-    #         self.muestra_actual = (self.muestra_actual + 1) % 3  # Recorre en círculos (0, 1, 2)
-
-    #         # Actualiza el texto del botón
-    #         self.boton_toma_muestra.config(text=f"MUESTRA {self.muestra_actual + 1}")
-
-    #         # Actualiza el promedio de peso
-    #         self.actualiza_promedio_peso()
-    #     except ValueError:
-    #         pass
-
-    def actualiza_promedio_peso(self):
-        try:
-            # Obtiene los valores de los Entry en self.peso_entries
-            pesos = [float(entry.get()) for entry in self.peso_entries]
-            # Calcula el promedio
-            promedio = round(sum(pesos) / len(pesos), 2)
-            # Actualiza el Entry del promedio
-            self.peso_promedio_entry.delete(0, tk.END)
-            self.peso_promedio_entry.insert(0, f"{promedio:.2f}")
-        except ValueError:
-            pass  # Ignora errores si algún Entry está vacío o tiene un valor inválido
-
     def actualiza_pesos(self, actual, piezas, cual="ok"):
         self.despliega_peso_actual(actual, cual)
         if cual == "ng":
@@ -828,15 +822,6 @@ class MiaGui:
         else:
             self.peso_ultimo_ng_entry.delete(0, tk.END)
             self.peso_ultimo_ng_entry.insert(0, f"{anterior:>6.1f}")
-           
-
-    def borra_pieza_final(self, cual="ok"):
-        if cual == "ng":
-            self.pieza_final_peso_ng_entry.delete(0, tk.END)
-            self.pieza_final_peso_ng_entry.insert(0, f"{str(0):>8}")
-        else:
-            self.pieza_final_peso_entry.delete(0, tk.END)
-            self.pieza_final_peso_entry.insert(0, f"{str(0):>8}")
 
     def actualiza_pieza_registrada(self, piezas, cual="ok"):
         if cual == "ng": 
@@ -856,6 +841,27 @@ class MiaGui:
         self.pieza_registrada_entry.insert(0, f"{str(piezas_ok):>6} ")
         self.pieza_registrada_entry.config(justify='right')
 
+    def actualiza_promedio_peso(self):
+        try:
+            # Obtiene los valores de los Entry en self.peso_entries
+            pesos = [float(entry.get()) for entry in self.peso_entries]
+            # Calcula el promedio
+            promedio = round(sum(pesos) / len(pesos), 2)
+            # Actualiza el Entry del promedio
+            self.peso_promedio_entry.delete(0, tk.END)
+            self.peso_promedio_entry.insert(0, f"{promedio:.2f}")
+        except ValueError:
+            pass  # Ignora errores si algún Entry está vacío o tiene un valor inválido
+           
+    def borra_pieza_final(self, cual="ok"):
+        if cual == "ng":
+            self.pieza_final_peso_ng_entry.delete(0, tk.END)
+            self.pieza_final_peso_ng_entry.insert(0, f"{str(0):>8}")
+        else:
+            self.pieza_final_peso_entry.delete(0, tk.END)
+            self.pieza_final_peso_entry.insert(0, f"{str(0):>8}")
+
+    
     def despliega_peso_actual(self, peso_actual, cual="ok"):
         if cual == "ng":
             self.peso_actual_ng_entry.delete(0, tk.END)

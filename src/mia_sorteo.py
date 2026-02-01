@@ -13,7 +13,19 @@ import sys
 # ===============================
 # True  = Solo báscula NG
 # False = Modo normal OK + NG
+
 SOLO_NG = False
+
+# ===============================
+# TIPO DE BÁSCULA (SERIAL / DYMO)
+# ===============================
+# Opciones: "serial" | "dymo"
+BASCULA_OK_TIPO = "dymo"
+BASCULA_NG_TIPO = "serial"
+
+# IDs HID para DYMO M10/M25
+DYMO_VENDOR_ID = 0x0922
+DYMO_PRODUCT_ID = 0x8003
 
 class BasculaAgente:
     """ Métodos y variables para leer pesos estables de la báscula. 
@@ -23,11 +35,12 @@ class BasculaAgente:
         y el handler hace `gui.ui_call(...)`.
     """
 
-    def __init__(self, cual, port, baud, sorteo):
+    def __init__(self, cual, port, baud, sorteo, tipo="serial"):
         self.cual = cual  # "ok" o "ng"
         self.port = port
         self.baud = baud
         self.sorteo = sorteo
+        self.tipo = (tipo or "serial").strip().lower()  # "serial" | "dymo"
 
         self.ser = None     # El objeto que maneja el puerto serial
         self.activa = False # Bandera de báscula conectada y muestreando
@@ -35,7 +48,7 @@ class BasculaAgente:
         # Estado por báscula
         self.peso_bascula = 0.0     # Peso instantáneo leído, no necesariamente estable
         self.peso_anterior = 0.0    # Último peso utilizado para incrementar contadores. 
-        self.peso_actual = 0.0      # Último peso válido durante el muestreo. Lo utiliza lee_bascula_serie() para retornar en caso de error
+        self.peso_actual = 0.0      # Último peso válido durante el muestreo. Lo utiliza lee_bascula_conectada() para retornar en caso de error
         self.tara = 0.0
         self.en_error = False
 
@@ -49,7 +62,14 @@ class BasculaAgente:
         self.max_empty_reads = 25  # ~2.5s con timeout=0.1
 
     def inicia(self):
-        # Verifica si el puerto ya está abierto
+        # DYMO (HID), no abre puerto serial. Crea hilo para muestreo (se accederá directamente por HID)
+        if self.tipo == "dymo":
+            print(f"Báscula {self.cual.upper()} configurada como DYMO-HID (VID={DYMO_VENDOR_ID:#06x}, PID={DYMO_PRODUCT_ID:#06x})")
+            self.activa = True
+            threading.Thread(target=self.loop, daemon=True).start()
+            return
+
+        # US SOLID (serial), abre puerto serial y crea hilo para muestreo
         if self.ser and getattr(self.ser, "is_open", False):
             print(f"El puerto serial de báscula {self.cual.upper()} ya está abierto.")
             return
@@ -58,6 +78,7 @@ class BasculaAgente:
             print(f"Puerto serial de báscula {self.cual.upper()} abierto en: {self.port}")
             self.activa = True
             threading.Thread(target=self.loop, daemon=True).start()
+
         except serial.SerialException as e:
             print(f"Error al abrir el puerto serial ({self.cual}): {e}")
             self.ser = None
@@ -71,6 +92,7 @@ class BasculaAgente:
 
     def muestrea(self):
         self.peso_bascula = self.lee_bascula()
+        
         if self.peso_bascula is None:
             # Sin lectura válida (apagada o error de comunicación). Marca estado y avisa.
             if not self.en_error:
@@ -100,8 +122,47 @@ class BasculaAgente:
         if es_valido:
             self.sorteo._bascula_pieza_valida(self.cual, piezas, self.peso_bascula, self.peso_anterior)
             self.peso_anterior = self.peso_bascula
+    #
+    #  Toma una ráfaga de lecturas (num_lecturas_max) y regresa con exito si obtiene 
+    #  lecturas estables (lecturas_consecutivas_estables).
+    #
+    def lee_bascula(self):
+        lecturas = []
+        contador_estables = 0
 
-    def lee_bascula_serie(self):
+        for _ in range(self.num_lecturas_max):
+            peso = self.lee_bascula_conectada()
+            if peso is None:
+                return None
+
+            lecturas.append(peso)
+            if len(lecturas) > 1:
+                diferencia = abs(lecturas[-1] - lecturas[-2])
+                if diferencia <= self.umbral_estabilidad:
+                    contador_estables += 1
+                else:
+                    contador_estables = 0
+
+            if contador_estables >= self.lecturas_consecutivas_estables:
+                ult = lecturas[-self.lecturas_consecutivas_estables:]
+                return round(sum(ult) / len(ult), 1)
+
+        # Si no se alcanzó estabilidad
+        return 0.0
+
+    def lee_bascula_conectada(self):
+        # Báscula DYMO se lee directamente por HID.
+        if self.tipo == "dymo":
+            peso = self.lee_bascula_dymo()
+            if peso is None:
+                return None
+
+            self.empty_reads = 0
+            sys.stdout.write(f"\r[{self.cual.upper()}-DYMO] Peso: {peso:+6.1f}g //  ")
+            sys.stdout.flush()
+            return peso
+        
+        # Báscula US SOLID (serial) se lee por el puerto serial previamente abierto.
         try:
             linea = self.ser.readline().decode(errors="ignore").strip()
 
@@ -136,33 +197,25 @@ class BasculaAgente:
             self.empty_reads = self.max_empty_reads
             return None
         except Exception as e:
-            print(f"Error en lee_bascula_serie ({self.cual}): {e}")
+            print(f"Error en lee_bascula_conectada ({self.cual}): {e}")
             return None
 
-    def lee_bascula(self):
-        lecturas = []
-        contador_estables = 0
+    def lee_bascula_dymo(self):
+        """Lee báscula DYMO por HID. Devuelve peso (float) o último válido."""
+        try:
+            dev = hid.Device(DYMO_VENDOR_ID, DYMO_PRODUCT_ID)
+            data = dev.read(8, timeout=500)
+            dev.close()
 
-        for _ in range(self.num_lecturas_max):
-            peso = self.lee_bascula_serie()
-            if peso is None:
-                return None
+            if data:
+                weight_raw = data[4] + (256 * data[5])
+                return round(float(weight_raw), 1)
 
-            lecturas.append(peso)
-            if len(lecturas) > 1:
-                diferencia = abs(lecturas[-1] - lecturas[-2])
-                if diferencia <= self.umbral_estabilidad:
-                    contador_estables += 1
-                else:
-                    contador_estables = 0
+            return self.peso_actual
 
-            if contador_estables >= self.lecturas_consecutivas_estables:
-                ult = lecturas[-self.lecturas_consecutivas_estables:]
-                return round(sum(ult) / len(ult), 1)
-
-        # Si no se alcanzó estabilidad
-        return 0.0
-
+        except Exception as e:
+            print(f"Error DYMO ({self.cual}): {e}")
+            return self.peso_actual
 
 class ManejadorSorteo:
     def __init__(self, gui, es_rpi):
@@ -371,9 +424,7 @@ class ManejadorSorteo:
             self._pieza_inspeccionada(pieza_envio, idx, ok, ng),
             self.loop,
         )
-
-        # IMPORTANT: este método puede ser llamado desde el hilo de la báscula.
-        # Toda actualización de Tkinter debe encolarse al hilo principal.
+        # Llamado seguro al GUI (thread-safe)
         self.gui.ui_call(self.gui.actualiza_cajitas, self.pieza_numero, self.peso_anterior_ok, self.peso_anterior_ng, idx)
        
     # Función del protocolo MIA-Proper 1.0: Envía el comando 'PIEZA_INSPEC'
@@ -431,6 +482,16 @@ class ManejadorSorteo:
         if len(puertos) >= 2:
             port_ng = puertos[1]
 
+        # Re-mapeo DYMO / SERIAL cuando solo hay un puerto
+        if BASCULA_OK_TIPO == "dymo" and BASCULA_NG_TIPO == "serial":
+            port_ok = None
+            port_ng = puertos[0] if len(puertos) >= 1 else None
+
+        elif BASCULA_OK_TIPO == "serial" and BASCULA_NG_TIPO == "dymo":
+            port_ok = puertos[0] if len(puertos) >= 1 else None
+            port_ng = None
+
+
         if SOLO_NG:
             # Si solo hay 1 puerto conectado, úsalo como NG
             if port_ok and not port_ng:
@@ -442,25 +503,38 @@ class ManejadorSorteo:
         print(f"Báscula OK  -> {port_ok}")
         print(f"Báscula NG  -> {port_ng if port_ng else 'NO CONECTADA'}")
 
-        # OK: siempre que exista puerto
-        if port_ok:
+        # OK: serial o dymo
+        if port_ok or BASCULA_OK_TIPO == "dymo":
             if not self.bascula_ok:
-                self.bascula_ok = BasculaAgente("ok", port_ok, BAUD, self)
+                self.bascula_ok = BasculaAgente(
+                    "ok",
+                    None if BASCULA_OK_TIPO == "dymo" else port_ok,
+                    BAUD,
+                    self,
+                    tipo=BASCULA_OK_TIPO,
+                )
             else:
-                self.bascula_ok.port = port_ok
+                self.bascula_ok.tipo = BASCULA_OK_TIPO
+                self.bascula_ok.port = None if BASCULA_OK_TIPO == "dymo" else port_ok
             self.bascula_ok.inicia()
         else:
             print("No se detectó puerto para báscula OK.")
 
-        # NG: solo si existe segundo puerto
-        if port_ng:
+        # NG: serial o dymo
+        if port_ng or BASCULA_NG_TIPO == "dymo":
             if not self.bascula_ng:
-                self.bascula_ng = BasculaAgente("ng", port_ng, BAUD, self)
+                self.bascula_ng = BasculaAgente(
+                    "ng",
+                    None if BASCULA_NG_TIPO == "dymo" else port_ng,
+                    BAUD,
+                    self,
+                    tipo=BASCULA_NG_TIPO,
+                )
             else:
-                self.bascula_ng.port = port_ng
+                self.bascula_ng.tipo = BASCULA_NG_TIPO
+                self.bascula_ng.port = None if BASCULA_NG_TIPO == "dymo" else port_ng
             self.bascula_ng.inicia()
         else:
-            # Si no hay NG conectada, asegúrate de no arrancarla.
             self.bascula_ng = None
 
     def es_nueva_pieza_por_peso(self, anterior, actual):
@@ -488,26 +562,6 @@ class ManejadorSorteo:
         except ValueError:
             return False, 0
     
-    # Esta función lee la báscula HID Dymo M10/M25. Ya no se utiliza en el código actual.
-    def lee_bascula_dymo(self):
-        VENDOR_ID = 0x0922  # 2338 - 
-        PRODUCT_ID = 0x8003  # 32771 - Dymo M10/M25
-
-        try:
-            dev = hid.Device(VENDOR_ID, PRODUCT_ID)
-            data = dev.read(8, timeout=500)
-            dev.close()
-            if data:
-                weight_raw = data[4] + (256 * data[5])
-                return round(weight_raw, 1)
-            else:
-                print("No se recibió dato")
-                return self.peso_actual
-        except hid.HIDException as e:
-            return -1.0  # Valor de error, no se pudo leer la báscula
-        except Exception as e:
-            print("Error al leer la báscula:", e)
-            return self.peso_actual
         
     # ---------------------------------
     #   Manejadores del GUI (handlers thread-safe): Métodos seguros para enviar información 
