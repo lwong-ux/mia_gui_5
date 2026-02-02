@@ -61,6 +61,12 @@ class BasculaAgente:
         self.empty_reads = 0
         self.max_empty_reads = 25  # ~2.5s con timeout=0.1
 
+        # DYMO HID: mantener handle y limitar spam de excepciones (y consumo de memoria por logs)
+        self._dymo_dev = None
+        self._dymo_err_count = 0
+        self._dymo_last_err_ts = 0.0
+        self._dymo_err_print_every = 10.0  # segundos (rate-limit)
+
     def inicia(self):
         # DYMO (HID), no abre puerto serial. Crea hilo para muestreo (se accederá directamente por HID)
         if self.tipo == "dymo":
@@ -88,7 +94,13 @@ class BasculaAgente:
             try:
                 self.muestrea()
             except Exception as e:
-                print(f"Error en el hilo de muestreo de la báscula {self.cual}: {e}")
+                # Evita spam si hay un error persistente
+                now = time.time()
+                if not hasattr(self, "_last_loop_err_ts"):
+                    self._last_loop_err_ts = 0.0
+                if (now - self._last_loop_err_ts) >= 5.0:
+                    self._last_loop_err_ts = now
+                    print(f"Error en el hilo de muestreo de la báscula {self.cual}: {e}")
 
     def muestrea(self):
         self.peso_bascula = self.lee_bascula()
@@ -201,20 +213,60 @@ class BasculaAgente:
             return None
 
     def lee_bascula_dymo(self):
-        """Lee báscula DYMO por HID. Devuelve peso (float) o último válido."""
+        """Lee báscula DYMO por HID.
+
+        - Reutiliza el handle HID para evitar abrir/cerrar en cada lectura.
+        - Si la báscula se apaga por inactividad, evita spam de excepciones y permite que el
+          mecanismo de "apagada" (None) se active, sin consumo creciente por logs.
+
+        Devuelve:
+          - float: peso válido
+          - None: si se considera apagada/sin respuesta (para disparar alerta y backoff)
+        """
         try:
-            dev = hid.Device(DYMO_VENDOR_ID, DYMO_PRODUCT_ID)
-            data = dev.read(8, timeout=500)
-            dev.close()
+            # Abre (o reabre) el dispositivo una sola vez
+            if self._dymo_dev is None:
+                self._dymo_dev = hid.Device(DYMO_VENDOR_ID, DYMO_PRODUCT_ID)
 
-            if data:
-                weight_raw = data[4] + (256 * data[5])
-                return round(float(weight_raw), 1)
+            data = self._dymo_dev.read(8, timeout=500)
 
-            return self.peso_actual
+            # Si no hay datos, cuenta como "vacío" (similar a serial)
+            if not data:
+                self.empty_reads += 1
+                if self.empty_reads >= self.max_empty_reads:
+                    return None
+                return self.peso_actual
+
+            # Datos OK => resetea contadores de error/vacíos
+            self.empty_reads = 0
+            self._dymo_err_count = 0
+
+            weight_raw = data[4] + (256 * data[5])
+            return round(float(weight_raw), 1)
 
         except Exception as e:
-            print(f"Error DYMO ({self.cual}): {e}")
+            # En DYMO apagada / dormida es común que ocurra excepción. Cerramos handle y rate-limit print.
+            self.empty_reads += 1
+            self._dymo_err_count += 1
+
+            # Cierra y fuerza reapertura futura
+            try:
+                if self._dymo_dev is not None:
+                    self._dymo_dev.close()
+            except Exception:
+                pass
+            self._dymo_dev = None
+
+            # Rate-limit del print para no inundar terminal (y evitar consumo de memoria por buffers/logs)
+            now = time.time()
+            if (now - self._dymo_last_err_ts) >= self._dymo_err_print_every:
+                self._dymo_last_err_ts = now
+                print(f"Error DYMO ({self.cual}): {e}")
+
+            # Si ya excedimos el umbral, reporta apagada
+            if self.empty_reads >= self.max_empty_reads:
+                return None
+
             return self.peso_actual
 
 class ManejadorSorteo:
@@ -352,56 +404,83 @@ class ManejadorSorteo:
     def lee_ng(self):
         return self.contador_ng
     
-    def push_contadores(self):
-        # Guarda el estado actual de los contadores en la pila.
-        self.stack_contadores.append(self.contadores_cajitas.copy())
+    def push_contadores(self, idx):
+        """Guarda en la pila SOLO el estado necesario para deshacer la última acción."""
+        snap = {
+            "idx": idx,
+            "pieza_numero": self.pieza_numero,
+            "cont": self.contadores_cajitas[idx],
+            "peso_ok": self.peso_anterior_ok,
+            "peso_ng": self.peso_anterior_ng,
+            "pza_ok": self.pieza_registrada_ok,
+            "pza_ng": self.pieza_registrada_ng,
+        }
+        self.stack_contadores.append(snap)
 
     def pop_contadores(self):
-        # Restaura el estado anterior de los contadores desde la pila.
-        # IMPORTANT: también debe restaurar el `peso_anterior` interno de cada BasculaAgente,
-        # porque es el que se usa para calcular incrementos (piezas) en el hilo de muestreo.
-     
-        if self.stack_contadores:
-            self.contadores_cajitas = self.stack_contadores.pop()
-            self.pieza_numero = self.contadores_cajitas[2]
-            self.peso_anterior_ok = self.contadores_cajitas[3]
-            self.peso_anterior_ng = self.contadores_cajitas[4]
-            self.pieza_registrada_ok = self.contadores_cajitas[5]
-            self.pieza_registrada_ng = self.contadores_cajitas[6]
+        """Deshace la última acción (solo la última báscula detectada)."""
+        with self._state_lock:
+            if not self.stack_contadores:
+                print("La pila de contadores está vacía. No se puede realizar pop.")
+                return
 
-            # Sincroniza el estado interno de las básculas con el peso anterior restaurado
-            if self.bascula_ok is not None:
-                self.bascula_ok.peso_anterior = self.peso_anterior_ok
-            if self.bascula_ng is not None:
-                self.bascula_ng.peso_anterior = self.peso_anterior_ng
+            snap = self.stack_contadores.pop()
+            idx = int(snap.get("idx", 0))
 
+            # Restaura pieza_numero y el contador de la cajita afectada
+            self.pieza_numero = int(snap.get("pieza_numero", self.pieza_numero))
+            self.contadores_cajitas[idx] = int(snap.get("cont", self.contadores_cajitas[idx]))
+
+            # Restaura SOLO el peso_anterior de la báscula afectada
+            if idx == 0:
+                self.peso_anterior_ok = float(snap.get("peso_ok", self.peso_anterior_ok))
+                self.pieza_registrada_ok = int(snap.get("pza_ok", self.pieza_registrada_ok))
+                if self.bascula_ok is not None:
+                    self.bascula_ok.peso_anterior = self.peso_anterior_ok
+            else:
+                self.peso_anterior_ng = float(snap.get("peso_ng", self.peso_anterior_ng))
+                self.pieza_registrada_ng = int(snap.get("pza_ng", self.pieza_registrada_ng))
+                if self.bascula_ng is not None:
+                    self.bascula_ng.peso_anterior = self.peso_anterior_ng
+
+            # Copias locales para GUI
+            pieza_num = self.pieza_numero
+            peso_ok = self.peso_anterior_ok
+            peso_ng = self.peso_anterior_ng
+            pza_ok = self.pieza_registrada_ok
+            pza_ng = self.pieza_registrada_ng
+        
+        # Llamado seguro al GUI (thread-safe)
+        # GUI: actualiza SOLO la cajita afectada (PIEZA No. se refresca siempre)
+        self.gui.ui_call(self.gui.actualiza_cajitas, pieza_num, peso_ok, peso_ng, idx)
+
+        # GUI: refresca piezas registradas (ambas)
+        self.gui.ui_call(self.gui.actualiza_piezas_registradas_okng, pza_ok, pza_ng)
+
+        # Corrige la señal de "última operación" al NUEVO tope del stack (lo siguiente a deshacer)
+        try:
+            with self._state_lock:
+                if self.stack_contadores:
+                    idx_marker = int(self.stack_contadores[-1].get("idx", 0))
+                else:
+                    idx_marker = None
+        except Exception:
+            idx_marker = None
+
+        if idx_marker is None:
+            # Ya no hay nada que deshacer: apaga ambas señales
+            self.gui.ui_call(self.gui.on_ok_leave, None)
+            self.gui.ui_call(self.gui.on_ngmix_leave, None)
+        elif idx_marker == 0:
+            self.gui.ui_call(self.gui.on_ok_hover, None)
+            self.gui.ui_call(self.gui.on_ngmix_leave, None)
         else:
-            print("La pila de contadores está vacía. No se puede realizar pop.")
-            return
-
-        # Actualiza GUI fuera del lock (solo UI)
-        for idx in range(2):
-            self.gui.ui_call(
-                self.gui.actualiza_cajitas,
-                self.pieza_numero,
-                self.peso_anterior_ok,
-                self.peso_anterior_ng,
-                idx,
-            )
-        self.gui.ui_call(
-            self.gui.actualiza_piezas_registradas_okng,
-            self.pieza_registrada_ok,
-            self.pieza_registrada_ng,
-        )
+            self.gui.ui_call(self.gui.on_ngmix_hover, None)
+            self.gui.ui_call(self.gui.on_ok_leave, None)
 
     def incrementa_contador(self, idx, piezas):
         with self._state_lock:
-            self.contadores_cajitas[2] = self.pieza_numero
-            self.contadores_cajitas[3] = self.peso_anterior_ok
-            self.contadores_cajitas[4] = self.peso_anterior_ng
-            self.contadores_cajitas[5] = self.pieza_registrada_ok
-            self.contadores_cajitas[6] = self.pieza_registrada_ng
-            self.push_contadores()  # Guarda el estado actual antes de modificarlo
+            self.push_contadores(idx)  # Guarda el estado actual antes de modificarlo
 
             if self.gui.tipo_conteo_peso.get():
                 self.multiplicador = piezas

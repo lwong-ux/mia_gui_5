@@ -29,7 +29,7 @@ class MiaGui:
         self.ES_RPI = es_raspberry_pi()
 
         self.root = tk.Tk()
-        self.root.title("Wong Instruments             MIA5             Ver 5.7") 
+        self.root.title("Wong Instruments             MIA5             Ver 5.8") 
         self.root.bind("<Escape>", lambda e: self.root.attributes("-fullscreen", False))
         
         # Carga y redimensiona la imagen del logo
@@ -582,8 +582,18 @@ class MiaGui:
             self.pza_ng_entry_mix
         ]
         # Actualiza la cajita de PIEZA No.
+        # Nota: `pieza_numero` en el sorteo representa el "siguiente" número de pieza (inicia en 1).
+        # Cuando no hay piezas contadas (OK=0 y NG=0) mostramos 0 para que DESHACER llegue visualmente a cero.
+        # display_pieza = pieza_numero
+        # try:
+        #     if pieza_numero == 1 and self.sorteo.contadores_cajitas[0] == 0 and self.sorteo.contadores_cajitas[1] == 0:
+        #         display_pieza = 0
+        # except Exception:
+        #     pass
+
         self.pieza_entry.config(state="normal")  # Habilita temporalmente
         self.pieza_entry.delete(0, tk.END)
+        #self.pieza_entry.insert(0, f"{display_pieza:>6}")
         self.pieza_entry.insert(0, f"{pieza_numero:>6}")
         self.pieza_entry.config(state="disabled")  # deshabilita temporalmente
         # Actualiza las cajitas de peso anterior.
@@ -723,8 +733,17 @@ class MiaGui:
             # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
+        # Muestra 0 cuando no hay piezas contadas (estado inicial)
+        # display_pieza = self.sorteo.pieza_numero
+        # try:
+        #     if self.sorteo.pieza_numero == 1 and self.sorteo.contadores_cajitas[0] == 0 and self.sorteo.contadores_cajitas[1] == 0:
+        #         display_pieza = 0
+        # except Exception:
+        #     pass
+
         self.pieza_entry.config(state="normal")  # Habilita temporalmente
         self.pieza_entry.delete(0, tk.END)
+        #self.pieza_entry.insert(0, f"{display_pieza:>6}")
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
         self.pieza_entry.config(state="disabled")  # deshabilita temporalmente
         for idx in range(len(entrys)):
