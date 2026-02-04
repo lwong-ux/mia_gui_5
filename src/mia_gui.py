@@ -726,26 +726,14 @@ class MiaGui:
     def limpia_cajitas(self):  
         entrys = [
             self.pza_ok_entry,
-            # self.pza_ng_entry,
-            # self.pza_ng_entry_2,
-            # self.pza_ng_entry_3,
-            # self.pza_ng_entry_4,
-            # self.pza_ng_entry_5,
             self.pza_ng_entry_mix
         ]
-        # Muestra 0 cuando no hay piezas contadas (estado inicial)
-        # display_pieza = self.sorteo.pieza_numero
-        # try:
-        #     if self.sorteo.pieza_numero == 1 and self.sorteo.contadores_cajitas[0] == 0 and self.sorteo.contadores_cajitas[1] == 0:
-        #         display_pieza = 0
-        # except Exception:
-        #     pass
-
+        # Cajita de Pieza No.
         self.pieza_entry.config(state="normal")  # Habilita temporalmente
         self.pieza_entry.delete(0, tk.END)
-        #self.pieza_entry.insert(0, f"{display_pieza:>6}")
         self.pieza_entry.insert(0, f"{self.sorteo.pieza_numero:>6}")
         self.pieza_entry.config(state="disabled")  # deshabilita temporalmente
+        # Cajitas de Ok y NG
         for idx in range(len(entrys)):
             entrys[idx].delete(0, 'end')
             entrys[idx].insert(0, f"{self.sorteo.contadores_cajitas[idx]:>5}")
@@ -890,18 +878,15 @@ class MiaGui:
             self.peso_actual_entry.insert(0, f"{str(peso_actual):>8}")
     
     def limpia_pesos(self):
-        # detener hilo de muestreo
-        # self.sorteo.muestreo_activo = False
-        # if hasattr(self.sorteo, 'hilo_bascula') and self.sorteo.hilo_bascula.is_alive():
-        #     self.sorteo.hilo_bascula.join(timeout=1)
-
-        # limpiar entradas
-        for entry in [self.peso_ultimo_entry, self.peso_actual_entry, self.pieza_final_peso_entry]:
+        # limpiar pesos y piezas finales
+        for entry in [self.peso_ultimo_entry, self.peso_actual_entry, 
+                      self.pieza_final_peso_entry, self.pieza_registrada_entry, 
+                      self.peso_ultimo_ng_entry, self.peso_actual_ng_entry, 
+                      self.pieza_final_peso_ng_entry, self.pieza_registrada_ng_entry
+                      ]:
             entry.delete(0, tk.END)
             entry.insert(0, str(0).rjust(5))
 
-        # reiniciar hilo de muestreo
-        #self.sorteo.inicia_bascula()
     
     def apaga_peso_actual(self):
         self.peso_actual_entry.delete(0, tk.END)
